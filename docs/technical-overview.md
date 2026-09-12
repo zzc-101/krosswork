@@ -14,7 +14,7 @@ flowchart TB
 
 | 组件 | 职责 |
 |---|---|
-| `frontend/web` | 对话、Skill、记忆、文件与产物 |
+| `frontend/web` | 对话、Skill、记忆、自动任务、文件与产物 |
 | `frontend/admin-web` | 平台模型、组织、成员、Skill 包和基础设施管理 |
 | `backend` | 身份、数据、SSE、Worker 租约与容器 / Pod 生命周期 |
 | `worker` | 成员容器中的控制面协议适配与会话宿主 |

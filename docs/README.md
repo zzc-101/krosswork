@@ -1,6 +1,6 @@
 # Kross 文档
 
-本文档集只描述当前 SaaS Work Agent 产品。阶段性评审和迁移背景保留为历史记录，不作为现行接口说明。
+本文档集只描述当前产品。过期评审、迁移清单和已完成路线图不再保留。
 
 ## 使用与运维
 
@@ -8,8 +8,8 @@
 |---|---|
 | 安装并完成第一个任务 | [快速上手](getting-started.md) |
 | 配置身份、模型、Worker 与存储 | [配置参考](configuration.md) |
-| 部署单机或多机环境 | [部署与运维](cloud-agent-deployment.md)、[k3s 选型](deployment-k3s-decision.md) |
-| 理解身份、文件和外部工具边界 | [安全模型](security.md) |
+| 部署单机或 k3s 集群 | [部署与运维](cloud-agent-deployment.md) |
+| 理解身份、文件、自动任务和外部工具边界 | [安全模型](security.md) |
 | 排查登录、直播、Worker 和文件问题 | [故障排查](troubleshooting.md) |
 | 查看支持环境 | [支持范围](support.md) |
 
@@ -23,7 +23,7 @@
 | 发布平台 Skill 或受管外部工具 | [扩展 Kross](extensions.md) |
 | 理解 Provider 能力与指标 | [Provider 能力](provider-capabilities.md)、[调用观测](provider-observability.md) |
 | 准备版本 | [发布指南](releasing.md) |
-| 查看当前实施顺序 | [实施方案](roadmap-2026-09-01.md) |
+| 查看下一步做什么 | [路线图](roadmap.md) |
 
 ## 维护约定
 
