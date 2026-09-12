@@ -26,6 +26,7 @@ import com.kross.channel.WorkerOfferBus;
 import com.kross.config.AppProperties;
 import com.kross.connector.ConversationOutlet;
 import com.kross.connector.ConversationTurnEvent;
+import com.kross.integration.IntegrationMcpService;
 import com.kross.knowledge.KnowledgeMcpService;
 import com.kross.support.Tokens;
 import java.time.Instant;
@@ -44,6 +45,7 @@ class AgentWorkerProtocolServiceTest {
   private AgentRuntimeOps runtime;
   private AgentChannelPublisher channels;
   private KnowledgeMcpService knowledgeMcp;
+  private IntegrationMcpService integrationMcp;
   private AgentMemoryService memories;
   private ObjectMapper objectMapper;
   private AgentWorkerProtocolService service;
@@ -55,11 +57,13 @@ class AgentWorkerProtocolServiceTest {
     runtime = mock(AgentRuntimeOps.class);
     channels = mock(AgentChannelPublisher.class);
     knowledgeMcp = mock(KnowledgeMcpService.class);
+    integrationMcp = mock(IntegrationMcpService.class);
     memories = mock(AgentMemoryService.class);
     objectMapper = new ObjectMapper().findAndRegisterModules();
     session = session("token-1", "org-1", "agent-1");
     when(runtime.authenticate("token-1")).thenReturn(session);
     when(knowledgeMcp.managedServer()).thenReturn(Optional.empty());
+    when(integrationMcp.managedServers(any())).thenReturn(Map.of());
     when(memories.renderFiles("org-1", "user-1"))
         .thenReturn(new AgentMemoryService.MemoryFiles("", ""));
     service = new AgentWorkerProtocolService(
@@ -73,6 +77,7 @@ class AgentWorkerProtocolServiceTest {
         mock(SkillCatalogService.class),
         mock(ModelCatalog.class),
         knowledgeMcp,
+        integrationMcp,
         runtime,
         new AgentTransactions(),
         channels,
@@ -149,6 +154,7 @@ class AgentWorkerProtocolServiceTest {
         mock(SkillCatalogService.class),
         mock(ModelCatalog.class),
         knowledgeMcp,
+        integrationMcp,
         runtime,
         new AgentTransactions(),
         channels,
@@ -258,6 +264,24 @@ class AgentWorkerProtocolServiceTest {
     assertThat(server).containsEntry("risk", "read");
     assertThat(server).containsEntry("transport", "streamable-http");
     assertThat(settings.userMarkdown()).isEqualTo("# user");
+  }
+
+  @Test
+  void workerSettingsMergesManagedIntegrations() {
+    Agent agent = new Agent();
+    agent.setId("agent-1");
+    agent.setOrganizationId("org-1");
+    agent.setUserId("user-1");
+    when(runtime.requireAgent("agent-1")).thenReturn(agent);
+    when(runtime.loadMcpServers("agent-1")).thenReturn(objectMapper.createObjectNode());
+    when(integrationMcp.managedServers(agent)).thenReturn(Map.of(
+        "integrations_notion",
+        Map.of("transport", "streamable-http", "url", "http://127.0.0.1:8787/mcp/integrations/inst-1")));
+
+    AgentProtocol.WorkerSettings settings = service.workerSettings("token-1");
+
+    assertThat(settings.mcpServers()).containsKey("integrations_notion");
+    assertThat(settings.mcpServers().get("integrations_notion")).isInstanceOf(Map.class);
   }
 
   @Test

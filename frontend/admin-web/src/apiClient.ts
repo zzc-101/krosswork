@@ -14,6 +14,7 @@ import {
   platformSchema,
   platformSkillSchema,
   knowledgeDocumentSchema,
+  integrationCatalogItemSchema,
   skillPackageDownloadSchema,
   skillVersionSchema,
   platformSsoSchema,
@@ -269,6 +270,30 @@ export class AdminApiClient {
     return this.request(`/api/v2/admin/skills/${encodeURIComponent(skillId)}/install`, z.unknown().optional(), {
       method: 'DELETE'
     }).then(() => undefined);
+  }
+  organizationIntegrations() {
+    return this.request('/api/v2/admin/integrations', z.object({ items: z.array(integrationCatalogItemSchema) }))
+      .then((result) => result.items);
+  }
+  installIntegration(catalogId: string, input: { host?: string } = {}) {
+    return this.request('/api/v2/admin/integrations', integrationCatalogItemSchema, {
+      method: 'POST',
+      body: { catalogId, ...input }
+    });
+  }
+  patchIntegration(installationId: string, input: { host?: string; status?: string }) {
+    return this.request(
+      `/api/v2/admin/integrations/${encodeURIComponent(installationId)}`,
+      integrationCatalogItemSchema,
+      { method: 'PATCH', body: input }
+    );
+  }
+  uninstallIntegration(installationId: string) {
+    return this.request(
+      `/api/v2/admin/integrations/${encodeURIComponent(installationId)}`,
+      z.unknown().optional(),
+      { method: 'DELETE' }
+    ).then(() => undefined);
   }
   tokenUsage(days = 30, organizationId?: string) {
     const organization = organizationId ? `&organizationId=${encodeURIComponent(organizationId)}` : '';

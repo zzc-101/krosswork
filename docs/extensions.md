@@ -39,7 +39,7 @@ Skill 不能改变文件边界、审批策略或模型凭证。脚本和二进�
 5. 支持 `AbortSignal`、超时、幂等和可判定错误。
 6. 返回面向任务的摘要与结构化数据，不向普通用户暴露 transport 细节。
 
-平台可以在 Worker 启动时下发受管 MCP/Connector 配置，但普通 Agent API 和工作台不提供 stdio 命令、URL 或认证编辑器。连接失败不能阻止基础文件工作能力启动。
+平台可以在 Worker 启动时下发受管 MCP/Connector 配置，但普通 Agent API 和工作台不提供 stdio 命令、URL 或认证编辑器。连接失败不能阻止基础文件工作能力启动。工作连接器（组织启用、成员 OAuth、控制面代理）见 [工作连接器](work-connectors.md)。
 
 ## 模型 Provider
 

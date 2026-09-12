@@ -175,6 +175,17 @@ export interface ConnectorStatus {
   boundAt?: string;
 }
 
+export interface WorkIntegration {
+  installationId: string;
+  catalogId: string;
+  name: string;
+  enabled: boolean;
+  connected: boolean;
+  host?: string | null;
+  accountLabel?: string | null;
+  grantStatus?: string | null;
+}
+
 export interface ConnectorBindCode {
   channel: string;
   code: string;

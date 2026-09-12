@@ -1,5 +1,6 @@
 import {
   ApartmentOutlined,
+  ApiOutlined,
   AppstoreOutlined,
   AuditOutlined,
   BuildOutlined,
@@ -60,6 +61,11 @@ export function createAdminMenu(superAdmin: boolean, current?: Membership): Menu
                 key: `/organizations/${current.organizationId}/skills`,
                 icon: <BulbOutlined />,
                 label: '组织技能'
+              },
+              {
+                key: `/organizations/${current.organizationId}/integrations`,
+                icon: <ApiOutlined />,
+                label: '工作连接器'
               },
               {
                 key: `/organizations/${current.organizationId}/audit`,

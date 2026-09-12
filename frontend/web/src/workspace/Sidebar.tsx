@@ -17,7 +17,7 @@ import {
   UserRound
 } from 'lucide-react';
 
-import type { Conversation, Membership, Skill } from '../api/types';
+import type { Conversation, Membership, Skill, WorkIntegration } from '../api/types';
 import type { AgentApiClient } from '../api/client';
 import { FilesPanel } from './FilesPanel';
 import { KnowledgePanel } from './KnowledgePanel';
@@ -106,6 +106,9 @@ export function Sidebar({
   const [feishu, setFeishu] = useState<{ enabled: boolean; bound: boolean; code?: string }>({ enabled: false, bound: false });
   const [feishuBusy, setFeishuBusy] = useState(false);
   const [feishuError, setFeishuError] = useState('');
+  const [integrations, setIntegrations] = useState<WorkIntegration[]>([]);
+  const [integrationBusy, setIntegrationBusy] = useState<string>();
+  const [integrationError, setIntegrationError] = useState('');
   const letter = (displayName.trim()[0] || username[0] || '?').toUpperCase();
   const visibleConversations = useMemo(
     () => conversations.filter((item) => item.title !== '新对话' || item.id === activeId),
@@ -140,6 +143,23 @@ export function Sidebar({
       })
       .catch(() => {
         if (!cancelled) setFeishu({ enabled: false, bound: false });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [api, organizationId]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void api.listIntegrations()
+      .then((items) => {
+        if (!cancelled) {
+          setIntegrations(items);
+          setIntegrationError('');
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setIntegrations([]);
       });
     return () => {
       cancelled = true;
@@ -271,6 +291,48 @@ export function Sidebar({
                     )}
                   </div>
                 )}
+                {integrations.map((item) => (
+                  <div className="account-connector" key={item.installationId}>
+                    <span>{item.host ? `${item.name} · ${item.host}` : item.name}</span>
+                    <p className="account-username">
+                      {item.connected
+                        ? (item.accountLabel ? `已用 ${item.accountLabel} 连接。` : '已用你的账号连接。')
+                        : '用你自己的账号授权后，对话里才能使用。'}
+                    </p>
+                    <button
+                      type="button"
+                      disabled={integrationBusy === item.installationId}
+                      onClick={() => {
+                        setIntegrationBusy(item.installationId);
+                        setIntegrationError('');
+                        if (item.connected) {
+                          void api.disconnectIntegration(item.installationId)
+                            .then(() => setIntegrations((current) => current.map((row) => (
+                              row.installationId === item.installationId
+                                ? { ...row, connected: false, accountLabel: null, grantStatus: null }
+                                : row
+                            ))))
+                            .catch((cause) => setIntegrationError(cause instanceof Error ? cause.message : '断开失败'))
+                            .finally(() => setIntegrationBusy(undefined));
+                          return;
+                        }
+                        void api.connectIntegration(item.installationId)
+                          .then((result) => {
+                            window.location.assign(result.authorizationUrl);
+                          })
+                          .catch((cause) => {
+                            setIntegrationError(cause instanceof Error ? cause.message : '无法开始授权');
+                            setIntegrationBusy(undefined);
+                          });
+                      }}
+                    >
+                      {integrationBusy === item.installationId
+                        ? '处理中…'
+                        : item.connected ? '断开' : '连接'}
+                    </button>
+                  </div>
+                ))}
+                {integrationError && <p className="account-username">{integrationError}</p>}
                 <button type="button" onClick={onLogout}>退出登录</button>
               </div>
             )}

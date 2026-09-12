@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.kross.integration.IntegrationMapper">
+  <resultMap id="InstallationMap" type="com.kross.integration.entity.IntegrationInstallation">
+    <id column="id" property="id"/>
+    <result column="organization_id" property="organizationId"/>
+    <result column="catalog_id" property="catalogId"/>
+    <result column="status" property="status"/>
+    <result column="config_json" property="config" typeHandler="com.kross.support.JsonbTypeHandler"/>
+    <result column="secret_ciphertext" property="secretCiphertext"/>
+    <result column="action_policy_json" property="actionPolicy" typeHandler="com.kross.support.JsonbTypeHandler"/>
+    <result column="created_by" property="createdBy"/>
+    <result column="created_at" property="createdAt"/>
+    <result column="updated_at" property="updatedAt"/>
+  </resultMap>
+
+  <select id="listInstallations" resultMap="InstallationMap">
+    SELECT * FROM integration_installations
+    WHERE organization_id = #{organizationId}
+    ORDER BY created_at, id
+  </select>
+
+  <select id="findInstallation" resultMap="InstallationMap">
+    SELECT * FROM integration_installations WHERE id = #{id}
+  </select>
+
+  <select id="findInstallationByCatalog" resultMap="InstallationMap">
+    SELECT * FROM integration_installations
+    WHERE organization_id = #{organizationId} AND catalog_id = #{catalogId}
+  </select>
+
+  <insert id="insertInstallation">
+    INSERT INTO integration_installations (
+      id, organization_id, catalog_id, status, config_json, secret_ciphertext, action_policy_json,
+      created_by, created_at, updated_at
+    ) VALUES (
+      #{id}, #{organizationId}, #{catalogId}, #{status},
+      #{config, typeHandler=com.kross.support.JsonbTypeHandler},
+      #{secretCiphertext},
+      #{actionPolicy, typeHandler=com.kross.support.JsonbTypeHandler},
+      #{createdBy}, #{createdAt}, #{updatedAt}
+    )
+  </insert>
+
+  <update id="updateInstallation">
+    UPDATE integration_installations
+    SET status = #{status},
+        config_json = #{config, typeHandler=com.kross.support.JsonbTypeHandler},
+        secret_ciphertext = #{secretCiphertext},
+        action_policy_json = #{actionPolicy, typeHandler=com.kross.support.JsonbTypeHandler},
+        updated_at = #{updatedAt}
+    WHERE id = #{id}
+  </update>
+
+  <delete id="deleteInstallation">
+    DELETE FROM integration_installations WHERE id = #{id}
+  </delete>
+
+  <select id="findGrant" resultType="com.kross.integration.entity.IntegrationGrant">
+    SELECT id, installation_id, user_id, organization_id, status, account_label,
+           access_ciphertext, refresh_ciphertext, token_expires_at, scopes, created_at, updated_at
+    FROM integration_grants
+    WHERE installation_id = #{installationId} AND user_id = #{userId}
+  </select>
+
+  <select id="listActiveGrants" resultType="com.kross.integration.entity.IntegrationGrant">
+    SELECT id, installation_id, user_id, organization_id, status, account_label,
+           access_ciphertext, refresh_ciphertext, token_expires_at, scopes, created_at, updated_at
+    FROM integration_grants
+    WHERE organization_id = #{organizationId} AND user_id = #{userId} AND status = 'active'
+  </select>
+
+  <insert id="insertGrant">
+    INSERT INTO integration_grants (
+      id, installation_id, user_id, organization_id, status, account_label,
+      access_ciphertext, refresh_ciphertext, token_expires_at, scopes, created_at, updated_at
+    ) VALUES (
+      #{id}, #{installationId}, #{userId}, #{organizationId}, #{status}, #{accountLabel},
+      #{accessCiphertext}, #{refreshCiphertext}, #{tokenExpiresAt}, #{scopes}, #{createdAt}, #{updatedAt}
+    )
+  </insert>
+
+  <update id="updateGrant">
+    UPDATE integration_grants
+    SET status = #{status},
+        account_label = #{accountLabel},
+        access_ciphertext = #{accessCiphertext},
+        refresh_ciphertext = #{refreshCiphertext},
+        token_expires_at = #{tokenExpiresAt},
+        scopes = #{scopes},
+        updated_at = #{updatedAt}
+    WHERE id = #{id}
+  </update>
+
+  <delete id="deleteGrant">
+    DELETE FROM integration_grants WHERE id = #{id}
+  </delete>
+
+  <delete id="deleteGrantsByInstallation">
+    DELETE FROM integration_grants WHERE installation_id = #{installationId}
+  </delete>
+
+  <insert id="insertOAuthState">
+    INSERT INTO integration_oauth_states (
+      id, installation_id, user_id, organization_id, code_verifier, redirect_after, expires_at, created_at
+    ) VALUES (
+      #{id}, #{installationId}, #{userId}, #{organizationId}, #{codeVerifier}, #{redirectAfter},
+      #{expiresAt}, #{createdAt}
+    )
+  </insert>
+
+  <select id="findOAuthState" resultType="com.kross.integration.entity.IntegrationOAuthState">
+    SELECT id, installation_id, user_id, organization_id, code_verifier, redirect_after, expires_at, created_at
+    FROM integration_oauth_states
+    WHERE id = #{id}
+  </select>
+
+  <delete id="deleteOAuthState">
+    DELETE FROM integration_oauth_states WHERE id = #{id}
+  </delete>
+
+  <delete id="deleteExpiredOAuthStates">
+    DELETE FROM integration_oauth_states WHERE expires_at &lt; now()
+  </delete>
+</mapper>

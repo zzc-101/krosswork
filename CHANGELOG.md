@@ -30,6 +30,7 @@
 
 ### Added
 
+- 工作连接器：组织管理员启用 Notion 或 GitLab 官方 MCP 后，成员用自己的账号授权。GitLab 安装时填写实例地址（默认 gitlab.com）。Worker 只连控制面 `/mcp/integrations/{id}`，用户 token 不出 Worker。Gmail 已预置但本轮不可安装。
 - 成员自动任务（侧栏「自动任务」）：一次性或 cron（最短 1 小时），每成员每组织最多 10 条。控制面多副本用 Postgres `SKIP LOCKED` 认领后，以创建者身份投递对话。
 - 每成员长期 Docker Worker 与持久 `/work` 工作区。
 - PostgreSQL 对话、SSE 直播、Worker WebSocket 和任务租约恢复。

@@ -98,7 +98,7 @@ Secret 使用 `APP_CREDENTIAL_MASTER_KEY` 加密后存入 `platform_settings`，
 | `APP_POSTGRES_PASSWORD` | 本地 PostgreSQL 密码；脚本可自动生成 |
 | `APP_CREDENTIAL_MASTER_KEY` | 加密模型 API Key 与 SSO Client Secret，至少 32 字符 |
 | `APP_PUBLIC_BASE_URL` | Worker 用来连控制面的地址。单机用 `http://kross-server:8787`；集群用 Service DNS，例如 `http://server:8787` |
-| `APP_EXTERNAL_BASE_URL` | 浏览器访问控制面的公开地址，用于生成固定的 SSO 回调地址；生产环境应使用 HTTPS，例如 `https://kross.example.com` |
+| `APP_EXTERNAL_BASE_URL` | 浏览器访问控制面的公开地址，用于生成固定的 SSO 和工作连接器 OAuth 回调；生产环境应使用 HTTPS，例如 `https://kross.example.com`。连接器回调为 `{APP_EXTERNAL_BASE_URL}/api/v2/integrations/oauth/callback` |
 | `APP_DEV_IDENTITY` | `1` 跳过登录；默认 `0`，生产必须为 `0` |
 | `APP_ORCHESTRATOR_MANAGER_ID` | Docker 资源归属标签，多实例必须唯一 |
 | `APP_WORKER_IMAGE` | Worker 镜像，Compose 默认 `kross-worker:local` |

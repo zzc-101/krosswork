@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 import type {
-  AgentMemory, AgentMessage, AgentModel, AgentSchedule, AgentScheduleRun, AuthConfig, ConnectorBindCode, ConnectorStatus, Conversation, InvitePreview, KnowledgeHit, KnowledgeStatus, Me, MessagePart, Skill, WorkspaceFile, WorkspaceListing, WorkspaceStoredFile, WorkspaceUpload
+  AgentMemory, AgentMessage, AgentModel, AgentSchedule, AgentScheduleRun, AuthConfig, ConnectorBindCode, ConnectorStatus, Conversation, InvitePreview, KnowledgeHit, KnowledgeStatus, Me, MessagePart, Skill, WorkIntegration, WorkspaceFile, WorkspaceListing, WorkspaceStoredFile, WorkspaceUpload
 } from './types';
 import type { ChannelEvent } from './channelEvents';
 
@@ -241,6 +241,17 @@ const connectorStatusSchema: z.ZodType<ConnectorStatus> = z.object({
   boundAt: instant.optional()
 });
 
+const workIntegrationSchema: z.ZodType<WorkIntegration> = z.object({
+  installationId: id,
+  catalogId: id,
+  name: z.string().min(1),
+  enabled: z.boolean(),
+  connected: z.boolean(),
+  host: z.string().min(1).nullish(),
+  accountLabel: z.string().min(1).nullish(),
+  grantStatus: z.string().min(1).nullish()
+});
+
 const connectorBindCodeSchema: z.ZodType<ConnectorBindCode> = z.object({
   channel: z.string().min(1),
   code: z.string().min(1),
@@ -317,6 +328,27 @@ export class AgentApiClient {
 
   updateProfile(input: { displayName?: string; avatarUrl?: string; gender?: string; phone?: string }): Promise<Me> {
     return this.request('/api/v2/me', meSchema, { method: 'PATCH', organization: false, body: input });
+  }
+
+  listIntegrations(): Promise<WorkIntegration[]> {
+    return this.request('/api/v2/me/integrations', z.object({ items: z.array(workIntegrationSchema) }))
+      .then((result) => result.items);
+  }
+
+  connectIntegration(installationId: string): Promise<{ authorizationUrl: string }> {
+    return this.request(
+      `/api/v2/me/integrations/${encodeURIComponent(installationId)}/connect`,
+      z.object({ authorizationUrl: z.string().min(1) }),
+      { method: 'POST' }
+    );
+  }
+
+  disconnectIntegration(installationId: string): Promise<void> {
+    return this.request(
+      `/api/v2/me/integrations/${encodeURIComponent(installationId)}`,
+      z.unknown().optional(),
+      { method: 'DELETE' }
+    ).then(() => undefined);
   }
 
   listConnectors(): Promise<ConnectorStatus[]> {

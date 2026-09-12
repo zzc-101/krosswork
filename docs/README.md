@@ -24,6 +24,7 @@
 | 理解 Provider 能力与指标 | [Provider 能力](provider-capabilities.md)、[调用观测](provider-observability.md) |
 | 准备版本 | [发布指南](releasing.md) |
 | 查看下一步做什么 | [路线图](roadmap.md) |
+| 工作连接器的决定与后续候选 | [工作连接器](work-connectors.md) |
 
 ## 维护约定
 

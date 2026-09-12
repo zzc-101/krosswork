@@ -48,6 +48,21 @@ export function WorkspacePage({
   }, [api]);
 
   useEffect(() => {
+    const url = new URL(window.location.href);
+    const oauthError = url.searchParams.get('error');
+    const connected = url.searchParams.get('integration') === 'connected';
+    if (oauthError) {
+      setError(oauthError);
+    }
+    if (oauthError || connected) {
+      url.searchParams.delete('error');
+      url.searchParams.delete('integration');
+      const query = url.searchParams.toString();
+      history.replaceState(null, '', url.pathname + (query ? `?${query}` : '') + url.hash);
+    }
+  }, []);
+
+  useEffect(() => {
     let cancelled = false;
     void (async () => {
       try {

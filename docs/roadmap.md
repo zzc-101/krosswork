@@ -61,3 +61,5 @@
 - 以仓库和 PR 为中心的产品形态。
 
 需要新能力时，优先加窄的控制面接口、版本化 Skill 或受管外部工具，见 [扩展 Kross](extensions.md)。
+
+工作连接器（GitLab、Notion、邮件及后续办公系统）的产品决定和厂商调研见 [工作连接器](work-connectors.md)。

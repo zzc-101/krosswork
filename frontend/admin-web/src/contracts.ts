@@ -330,6 +330,20 @@ export const knowledgeDocumentSchema = z
   })
   .strict();
 
+export const integrationCatalogItemSchema = z
+  .object({
+    catalogId: z.string().min(1),
+    name: z.string().min(1),
+    description: z.string(),
+    installable: z.boolean(),
+    installed: z.boolean(),
+    hostRequired: z.boolean(),
+    host: z.string().min(1).nullable().optional(),
+    installationId: z.string().min(1).nullable().optional(),
+    status: z.string().min(1).nullable().optional()
+  })
+  .strict();
+
 export const page = <T extends z.ZodTypeAny>(item: T) =>
   z
     .object({
@@ -362,3 +376,4 @@ export type TokenUsage = z.infer<typeof tokenUsageSchema>;
 export type TokenUsageRank = z.infer<typeof tokenUsageRankSchema>;
 export type AuditLog = z.infer<typeof auditLogSchema>;
 export type AuthLoginEvent = z.infer<typeof authLoginEventSchema>;
+export type IntegrationCatalogItem = z.infer<typeof integrationCatalogItemSchema>;

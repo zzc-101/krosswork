@@ -19,6 +19,7 @@ import com.kross.channel.WorkerOfferBus;
 import com.kross.config.AppProperties;
 import com.kross.connector.ConversationOutlet;
 import com.kross.connector.ConversationTurnEvent;
+import com.kross.integration.IntegrationMcpService;
 import com.kross.knowledge.KnowledgeMcpService;
 import com.kross.observability.RequestLogContext;
 import java.time.Instant;
@@ -49,6 +50,7 @@ public class AgentWorkerProtocolService {
   private final SkillCatalogService skills;
   private final ModelCatalog models;
   private final KnowledgeMcpService knowledgeMcp;
+  private final IntegrationMcpService integrationMcp;
   private final AgentRuntimeOps runtime;
   private final AgentTransactions transactions;
   private final AgentChannelPublisher channels;
@@ -61,6 +63,7 @@ public class AgentWorkerProtocolService {
     Map<String, Object> map = mapper.convertValue(servers, new TypeReference<Map<String, Object>>() {});
     Map<String, Object> merged = new LinkedHashMap<>(Optional.ofNullable(map).orElse(Map.of()));
     knowledgeMcp.managedServer().ifPresent(server -> merged.put(KnowledgeMcpService.SERVER_ID, server));
+    merged.putAll(integrationMcp.managedServers(agent));
     AgentMemoryService.MemoryFiles files = memories.renderFiles(agent.getOrganizationId(), agent.getUserId());
     return new AgentProtocol.WorkerSettings(merged, files.userMarkdown(), files.memoryMarkdown());
   }

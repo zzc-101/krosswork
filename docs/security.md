@@ -17,7 +17,7 @@ Kross 通过平台身份、每成员 Docker Worker、单工作区路径边界和
 
 - 登录使用 HttpOnly `APP_SESSION` Cookie。
 - 企业 SSO 由控制面验证 OIDC IdP 的身份令牌。
-- SSO Client Secret 与模型 API Key 使用 `APP_CREDENTIAL_MASTER_KEY` 加密。
+- SSO Client Secret、模型 API Key 与工作连接器 OAuth token 使用 `APP_CREDENTIAL_MASTER_KEY` 加密。连接器 token 只留在控制面，不进 Worker 或 `/work`。
 - 超级管理员管理平台，组织管理员管理本组织，普通成员只使用工作台。
 - `APP_DEV_IDENTITY` 仅限本机冒烟，生产必须关闭。
 

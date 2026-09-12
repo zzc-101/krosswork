@@ -23,6 +23,7 @@ describe('管理端角色菜单', () => {
     expect(labels).toContain('技能库');
     expect(labels).toContain('知识库');
     expect(labels).toContain('组织技能');
+    expect(labels).toContain('工作连接器');
     expect(labels).toContain('组织概览');
     expect(labels.filter((label) => label === 'Token 统计')).toHaveLength(2);
   });
@@ -32,6 +33,7 @@ describe('管理端角色菜单', () => {
     expect(labels).toContain('组织概览');
     expect(labels).toContain('成员与角色');
     expect(labels).toContain('组织技能');
+    expect(labels).toContain('工作连接器');
     expect(labels.filter((label) => label === 'Token 统计')).toHaveLength(1);
     expect(labels).not.toContain('平台概览');
     expect(labels).not.toContain('平台设置');
