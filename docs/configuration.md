@@ -80,7 +80,7 @@ Worker 的 Streamable HTTP 客户端允许 HTTP 访问本机、无点号的 Comp
 | 数据 | 位置 |
 |---|---|
 | 账号、组织、模型、对话、记忆、Skill 元数据 | PostgreSQL |
-| Skill ZIP 和其他对象产物 | MinIO / S3 |
+| Skill ZIP 和其他对象产物 | RustFS / S3 |
 | 成员文件与工作产物 | `/work`（单机 volume，集群 JuiceFS） |
 | Runtime checkpoint、mutation journal、受管工具运行配置 | Worker 的受管目录 |
 | 热点读缓存（身份/鉴权/目录） | Redis（可选） |

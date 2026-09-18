@@ -129,7 +129,7 @@ jobs:
         env:
           APP_POSTGRES_PASSWORD: ci-placeholder-password
           APP_CREDENTIAL_MASTER_KEY: abcdef0123456789abcdef0123456789
-          APP_S3_SECRET_KEY: kross-minio-ci-secret
+          APP_S3_SECRET_KEY: kross-s3-ci-secret
         run: docker compose --project-directory . -f deploy/local/docker-compose.yml config --quiet
 
       - name: Build worker image

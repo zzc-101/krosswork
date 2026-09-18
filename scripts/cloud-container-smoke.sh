@@ -14,7 +14,7 @@ smoke_suffix="${GITHUB_RUN_ID:-local}-${GITHUB_RUN_ATTEMPT:-0}-$$"
 export COMPOSE_PROJECT_NAME="kross-smoke-${smoke_suffix}"
 export APP_POSTGRES_PASSWORD="smoke-postgres-${smoke_suffix}"
 export APP_CREDENTIAL_MASTER_KEY="abcdef0123456789abcdef0123456789"
-export APP_S3_SECRET_KEY="kross-minio-smoke-${smoke_suffix}"
+export APP_S3_SECRET_KEY="kross-s3-smoke-${smoke_suffix}"
 export APP_DEV_IDENTITY=1
 export APP_PORT=0
 export APP_S3_PORT=0
@@ -48,7 +48,7 @@ while [ "$attempt" -lt 90 ]; do
     compose exec -T server curl -fsS \
       -H 'x-app-user-id: smoke-user' \
       http://127.0.0.1:8787/api/v2/me >/dev/null
-    echo "SaaS container smoke 通过：PostgreSQL、MinIO、Java 控制面、用户端与管理端均已就绪"
+    echo "SaaS container smoke 通过：PostgreSQL、RustFS、Java 控制面、用户端与管理端均已就绪"
     exit 0
   fi
   attempt=$((attempt + 1))

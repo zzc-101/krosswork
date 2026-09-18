@@ -1,69 +1,84 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: minio
+  name: rustfs
   namespace: {{ include "kross.namespace" . }}
   labels:
     {{- include "kross.labels" . | nindent 4 }}
-    app.kubernetes.io/component: minio
+    app.kubernetes.io/component: rustfs
 spec:
   ports:
     - name: api
       port: 9000
       targetPort: 9000
   selector:
-    app.kubernetes.io/component: minio
+    app.kubernetes.io/component: rustfs
     app.kubernetes.io/instance: {{ .Release.Name }}
 ---
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: minio
+  name: rustfs
   namespace: {{ include "kross.namespace" . }}
   labels:
     {{- include "kross.labels" . | nindent 4 }}
-    app.kubernetes.io/component: minio
+    app.kubernetes.io/component: rustfs
 spec:
-  serviceName: minio
+  serviceName: rustfs
   replicas: 1
   selector:
     matchLabels:
-      app.kubernetes.io/component: minio
+      app.kubernetes.io/component: rustfs
       app.kubernetes.io/instance: {{ .Release.Name }}
   template:
     metadata:
       labels:
         {{- include "kross.labels" . | nindent 8 }}
-        app.kubernetes.io/component: minio
+        app.kubernetes.io/component: rustfs
     spec:
-      {{- with .Values.minio.nodeSelector }}
+      {{- with .Values.rustfs.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.minio.tolerations }}
+      {{- with .Values.rustfs.tolerations }}
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      securityContext:
+        fsGroup: 10001
       containers:
-        - name: minio
-          image: {{ .Values.minio.image }}
-          args: ["server", "/data", "--console-address", ":9001"]
+        - name: rustfs
+          image: {{ .Values.rustfs.image }}
+          securityContext:
+            runAsUser: 10001
+            runAsGroup: 10001
+            runAsNonRoot: true
           env:
-            - name: MINIO_ROOT_USER
+            - name: RUSTFS_VOLUMES
+              value: /data
+            - name: RUSTFS_ADDRESS
+              value: 0.0.0.0:9000
+            - name: RUSTFS_CONSOLE_ENABLE
+              value: "true"
+            - name: RUSTFS_CONSOLE_ADDRESS
+              value: 0.0.0.0:9001
+            - name: RUSTFS_ACCESS_KEY
               valueFrom:
                 secretKeyRef:
                   name: kross-secrets
                   key: s3-access-key
-            - name: MINIO_ROOT_PASSWORD
+            - name: RUSTFS_SECRET_KEY
               valueFrom:
                 secretKeyRef:
                   name: kross-secrets
                   key: s3-secret-key
+            - name: RUSTFS_CORS_ALLOWED_ORIGINS
+              value: "*"
           ports:
             - containerPort: 9000
           readinessProbe:
             httpGet:
-              path: /minio/health/live
+              path: /health
               port: 9000
             initialDelaySeconds: 5
             periodSeconds: 5
@@ -75,9 +90,9 @@ spec:
         name: data
       spec:
         accessModes: ["ReadWriteOnce"]
-        {{- if .Values.minio.persistence.storageClass }}
-        storageClassName: {{ .Values.minio.persistence.storageClass | quote }}
+        {{- if .Values.rustfs.persistence.storageClass }}
+        storageClassName: {{ .Values.rustfs.persistence.storageClass | quote }}
         {{- end }}
         resources:
           requests:
-            storage: {{ .Values.minio.persistence.size }}
+            storage: {{ .Values.rustfs.persistence.size }}

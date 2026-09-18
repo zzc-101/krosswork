@@ -172,7 +172,7 @@ describe('workspace commands', () => {
       response.writeHead(200, { 'content-type': 'application/octet-stream' });
       response.end(payload);
     });
-    process.env.APP_S3_ENDPOINT = 'http://minio:9000';
+    process.env.APP_S3_ENDPOINT = 'http://rustfs:9000';
     try {
       await expect(command('workspace.pull', {
         path: 'denied.bin',

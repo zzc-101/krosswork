@@ -28,9 +28,9 @@ secrets:
 app:
   externalBaseUrl: http://localhost
   publicBaseUrl: http://server:8787
-  # Browser-reachable MinIO/S3 URL used in presigned PUT/GET. ClusterIP
-  # http://minio:9000 is not usable from the browser. Local default assumes
-  # `kubectl port-forward svc/minio 9000:9000`.
+  # Browser-reachable RustFS/S3 URL used in presigned PUT/GET. ClusterIP
+  # http://rustfs:9000 is not usable from the browser. Local default assumes
+  # `kubectl port-forward svc/rustfs 9000:9000`.
   s3PublicEndpoint: http://localhost:9000
   workerRuntime: kubernetes
   workerStorage: juicefs
@@ -46,8 +46,9 @@ postgres:
   nodeSelector: {}
   tolerations: []
 
-minio:
-  image: minio/minio:RELEASE.2025-04-22T22-12-26Z
+rustfs:
+  image: rustfs/rustfs:1.0.0
+  rcImage: rustfs/rc:v0.1.36
   persistence:
     size: 40Gi
     storageClass: ""

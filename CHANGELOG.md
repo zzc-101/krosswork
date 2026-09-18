@@ -16,6 +16,7 @@
 - 浏览器协议删除普通用户模型选择、MCP 配置、Git 状态和仓库克隆入口。
 - 成员工作区上传改为预签名写入对象存储，再同步到 Worker；下载与图片预览走同源 `file/content` 302（约 2 分钟短缓存），不再返回 JSON 预签名 URL。
 - 工作区文件不再自动加载为编程项目系统规则；平台 Skill、用户记忆和明确的用户请求构成可信工作上下文。
+- 本地 Compose 与 k3s 对象存储从 MinIO 换成 RustFS（`rustfs/rustfs:1.0.0`）。控制面仍走 S3 API；Docker Hub 已下线 `minio/minio`。
 
 ### Removed
 
@@ -43,4 +44,5 @@
 - 普通用户客户端必须停止调用 `/api/v2/agent/model`、`/models`、`/mcp`、`/workspace/git*` 和 `/workspace/file/url`；下载与图片预览改用 `/workspace/file/content`。
 - 不再读取工作区中的本地 Skill 或编程项目规则；需要稳定行为时由管理员发布版本化 Skill。
 - 后端数据库迁移由 Flyway 自动执行；升级前仍应备份 PostgreSQL、对象存储和 `/work`。
+- 对象存储服务名改为 `rustfs`，本地数据卷改为 `kross-rustfs-v1`。旧的 `kross-minio-v2` 可以删掉。
 - `KROSS_WORKER_RUNTIME=cluster` 与 `kross-node` 已移除，多机改为 k3s Helm（`kubernetes` + JuiceFS CSI）。`worker_nodes` 表在 V25 删除。

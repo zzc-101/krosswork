@@ -10,7 +10,7 @@
 | `web` | 同源 Nginx：工作台 `/`，管理中心 `/admin/`，`/api/` 反代控制面。不反代 `/internal/` |
 | `server` | Java 控制面：账号 / SSO、平台模型、对话、Agent 生命周期 |
 | `postgres` | 控制面权威数据（用户、组织、对话 `parts`、Agent 运行时状态）；集群另建 `kross_jfs` 给 JuiceFS 元数据 |
-| `minio` | 对象存储：产物 bucket 默认 `kross`；集群 JuiceFS 底仓用 `kross-jfs` |
+| `rustfs` | 对象存储：产物 bucket 默认 `kross`；集群 JuiceFS 底仓用 `kross-jfs` |
 | `redis` | 控制面热点读缓存（可选）：关闭持久化，故障时自动回源 PostgreSQL |
 | `worker` | 按人拉起的持久容器，在 `/work` 跑 Agent Runtime。单机是 Docker 容器，集群是 Kubernetes Pod |
 
@@ -107,7 +107,7 @@ Secret 使用 `APP_CREDENTIAL_MASTER_KEY` 加密后存入 `platform_settings`，
 | `APP_KUBERNETES_NAMESPACE` | `kubernetes` 运行时创建 Pod/PVC 的命名空间；不设则读取 in-cluster ServiceAccount |
 | `APP_KUBERNETES_STORAGE_CLASS` | JuiceFS StorageClass 名，默认 `kross-juicefs` |
 | `APP_KUBERNETES_WORKSPACE_SIZE` | 每用户 PVC 申请值，默认 `10Gi`，local-path/CSI 不一定强制执行 |
-| `APP_S3_*` | MinIO / S3：用户文件、产物与（集群）JuiceFS 底仓。`APP_S3_ENDPOINT` 是控制面与 Worker 的内部地址（Compose `http://minio:9000`）；`APP_S3_PUBLIC_ENDPOINT` 必须是浏览器能打开的地址，用于预签名 PUT/GET。集群不要填站点 URL：MinIO 默认只有 ClusterIP，本地可用 `kubectl port-forward svc/minio 9000:9000` 后设 `http://localhost:9000`，生产需独立 Ingress / NodePort |
+| `APP_S3_*` | RustFS / S3：用户文件、产物与（集群）JuiceFS 底仓。`APP_S3_ENDPOINT` 是控制面与 Worker 的内部地址（Compose `http://rustfs:9000`）；`APP_S3_PUBLIC_ENDPOINT` 必须是浏览器能打开的地址，用于预签名 PUT/GET。集群不要填站点 URL：RustFS 默认只有 ClusterIP，本地可用 `kubectl port-forward svc/rustfs 9000:9000` 后设 `http://localhost:9000`，生产需独立 Ingress / NodePort |
 | `APP_CACHE_ENABLED` | 控制面 Redis 缓存开关，默认开启；设为 `false` 直连 PostgreSQL |
 | `APP_FEISHU_ENABLED` | 飞书渠道开关。为 `true` 且配置 App ID/Secret，以及 Verification Token 或 Encrypt Key 之一后，事件订阅 URL 为 `{APP_EXTERNAL_BASE_URL}/hooks/feishu` |
 | `SPRING_DATA_REDIS_*` | 控制面连接 Redis 的地址 / 端口 / 密码（Compose 内默认 `redis:6379`） |
@@ -121,7 +121,7 @@ Secret 使用 `APP_CREDENTIAL_MASTER_KEY` 加密后存入 `platform_settings`，
 默认 `APP_WORKER_STORAGE=local`：每人一块本机 Docker volume，挂到容器 `/work`。
 单机 Compose 不需要 JuiceFS。
 
-集群把 `/work` 放到 JuiceFS 上。对象数据在 MinIO bucket `kross-jfs`（与产物 bucket
+集群把 `/work` 放到 JuiceFS 上。对象数据在 RustFS bucket `kross-jfs`（与产物 bucket
 `kross` 分开），元数据在 Postgres 库 `kross_jfs`。每个 Agent 使用子目录
 `agents/{agentId}`。控制面通过 JuiceFS CSI 动态创建 RWX PVC，不再使用宿主机 FUSE
 sidecar 或 `kross-node`。
@@ -132,7 +132,7 @@ sidecar 或 `kross-node`。
 ### k3s 安装
 
 需要一台 k3s server，以及按需增加的 agent 节点。先安装 JuiceFS CSI Driver，再
-安装本仓库 chart。控制面、Postgres、MinIO 默认单副本。
+安装本仓库 chart。控制面、Postgres、RustFS 默认单副本。
 
 ```bash
 helm repo add juicefs https://juicedata.github.io/charts/
@@ -191,13 +191,13 @@ ServiceAccount，不挂 Socket；公网入口不得暴露 Socket 或 `/internal/
 | 账号、组织、对话、Agent 元数据 | PostgreSQL 库 `kross` | 必须 |
 | JuiceFS 元数据 | PostgreSQL 库 `kross_jfs`（集群） | 必须，与底仓一起 |
 | 工作区文件 | 本机 Docker volume，或 JuiceFS（`agents/{agentId}`） | 必须 |
-| 产物对象 | MinIO bucket `kross` | 建议开版本 |
-| JuiceFS 底仓 | MinIO bucket `kross-jfs`（集群） | 与元数据 Postgres 一起备份 |
+| 产物对象 | RustFS bucket `kross` | 建议开版本 |
+| JuiceFS 底仓 | RustFS bucket `kross-jfs`（集群） | 与元数据 Postgres 一起备份 |
 | 模型密钥 / SSO Secret | PostgreSQL，由 `APP_CREDENTIAL_MASTER_KEY` 加密 | 备份库的同时保管主密钥 |
 | Runtime 会话 / trace / 个人 Skills | Worker 容器 `$HOME/.kross` | 默认不随 `/work` 持久化 |
 
 本地 `./scripts/start-cloud.sh --stop` 保留
-`kross-postgres-v3` 与 `kross-minio-v2`。带 `-v` 删除这些卷属于破坏性操作。
+`kross-postgres-v3` 与 `kross-rustfs-v1`。带 `-v` 删除这些卷属于破坏性操作。
 
 ## 发布门禁
 

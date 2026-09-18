@@ -89,7 +89,7 @@ spec:
             - name: SPRING_DATA_REDIS_PORT
               value: "6379"
             - name: APP_S3_ENDPOINT
-              value: http://minio:9000
+              value: http://rustfs:9000
             - name: APP_S3_PUBLIC_ENDPOINT
               value: {{ .Values.app.s3PublicEndpoint | default "http://localhost:9000" | quote }}
             - name: AWS_REQUEST_CHECKSUM_CALCULATION

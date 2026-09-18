@@ -27,7 +27,7 @@ usage() {
   ./scripts/start-cloud.sh             构建并启动 SaaS Work Agent
   ./scripts/start-cloud.sh --no-build  使用现有镜像启动
   ./scripts/start-cloud.sh --knowledge   同时启动可选知识库服务
-  ./scripts/start-cloud.sh --stop      停止服务并保留 PostgreSQL / MinIO 数据卷
+  ./scripts/start-cloud.sh --stop      停止服务并保留 PostgreSQL / RustFS 数据卷
   ./scripts/start-cloud.sh --logs      持续查看服务日志
   ./scripts/start-cloud.sh --migrate   启动控制面以执行 Flyway 迁移
   ./scripts/start-cloud.sh --help      显示帮助
@@ -119,9 +119,9 @@ wait_for_web() {
   done
   echo "Web 入口未能在 60 秒内就绪，最近日志如下：" >&2
   if [ "$WITH_KNOWLEDGE" = 1 ]; then
-    compose logs --tail 100 web server minio postgres redis knowledge >&2
+    compose logs --tail 100 web server rustfs postgres redis knowledge >&2
   else
-    compose logs --tail 100 web server minio postgres redis >&2
+    compose logs --tail 100 web server rustfs postgres redis >&2
   fi
   return 1
 }
@@ -159,22 +159,22 @@ case "$command" in
     require_docker
     ensure_env
     compose down --remove-orphans
-    echo "服务已停止，PostgreSQL 与 MinIO 数据卷已保留。"
+    echo "服务已停止，PostgreSQL 与 RustFS 数据卷已保留。"
     ;;
   --logs)
     require_docker
     ensure_env
     if [ "$WITH_KNOWLEDGE" = 1 ]; then
-      compose logs -f web server minio postgres redis knowledge
+      compose logs -f web server rustfs postgres redis knowledge
     else
-      compose logs -f web server minio postgres redis
+      compose logs -f web server rustfs postgres redis
     fi
     ;;
   --migrate | --migrate-apply)
     require_docker
     ensure_env
     validate_single_node_env
-    compose up -d postgres minio redis
+    compose up -d postgres rustfs redis
     compose up -d --force-recreate --no-deps server
     echo "控制面已启动，Flyway 会在进程启动时执行迁移。"
     ;;

@@ -327,7 +327,7 @@ public class AppProperties {
     private String region = "us-east-1";
     private String bucket = "kross";
     private String accessKey = "kross";
-    private String secretKey = "kross-minio-secret";
+    private String secretKey = "kross-s3-secret";
     private boolean pathStyle = true;
     private Duration presignTtl = Duration.ofMinutes(15);
 

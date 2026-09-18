@@ -77,7 +77,7 @@ public class ObjectStorage {
               .build()))
           .build());
     } catch (S3Exception error) {
-      // MinIO Community Edition uses cluster-wide CORS and returns 501 for PutBucketCors.
+      // Some S3-compatible servers use cluster-wide CORS and return 501 for PutBucketCors.
       if (error.statusCode() != 501) {
         throw error;
       }
