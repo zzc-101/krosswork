@@ -113,6 +113,7 @@ node scripts/check-doc-links.mjs
 
 ## 文档
 
+- [介绍页](https://zzc-101.github.io/krosswork/)
 - [文档索引](docs/README.md)
 - [快速上手](docs/getting-started.md)
 - [配置参考](docs/configuration.md)

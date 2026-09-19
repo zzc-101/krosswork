@@ -113,6 +113,7 @@ The repository root is not a Node project. Install frontend and Worker dependenc
 
 ## Documentation
 
+- [Project site](https://zzc-101.github.io/krosswork/)
 - [Documentation index](docs/README.md)
 - [Getting started](docs/getting-started.md)
 - [Configuration](docs/configuration.md)
