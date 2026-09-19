@@ -13,21 +13,34 @@
     <link rel="icon" href="./icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="./icon-192.png" />
     <meta property="og:type" content="website" />
+    <meta property="og:locale" content="zh_CN" />
     <meta property="og:title" content="Kross — 组织可自托管的云端电脑 Agent" />
     <meta
       property="og:description"
       content="每位成员一台远程电脑。整理资料、写出产物。不操作用户自己的电脑。"
     />
     <meta property="og:url" content="https://zzc-101.github.io/krosswork/" />
-    <meta property="og:image" content="https://zzc-101.github.io/krosswork/icon-512.png" />
-    <meta name="twitter:card" content="summary" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600&family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+SC:wght@400;500&family=Noto+Serif+SC:wght@600;700&display=swap"
-      rel="stylesheet"
-    />
+    <meta property="og:image" content="https://zzc-101.github.io/krosswork/og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content="https://zzc-101.github.io/krosswork/og.png" />
     <link rel="stylesheet" href="./styles.css" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "Kross",
+        "applicationCategory": "BusinessApplication",
+        "operatingSystem": "Linux, macOS",
+        "license": "https://opensource.org/licenses/MIT",
+        "url": "https://zzc-101.github.io/krosswork/",
+        "downloadUrl": "https://github.com/zzc-101/krosswork",
+        "sameAs": "https://github.com/zzc-101/krosswork",
+        "description": "组织可自托管的云端电脑 Agent。每位成员一台远程电脑：长期工作区、独立 Worker、自己的文件和记忆。",
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+      }
+    </script>
   </head>
   <body>
     <div class="spine" aria-hidden="true"></div>
@@ -41,7 +54,7 @@
       <nav>
         <a href="https://github.com/zzc-101/krosswork/blob/main/docs/README.md" data-i18n="docsNav">文档</a>
         <a href="https://github.com/zzc-101/krosswork">GitHub</a>
-        <button type="button" class="lang" data-lang-toggle aria-label="Switch language">EN</button>
+        <button type="button" class="lang" data-lang-toggle aria-label="切换为英文">EN</button>
       </nav>
     </header>
 
@@ -57,7 +70,7 @@
             组织可自托管的云端电脑 Agent。每位成员一台远程电脑：长期工作区、独立 Worker、自己的文件和记忆。用浏览器描述要完成的工作，产物写在远端。它不操作用户自己的电脑。
           </p>
           <div class="actions">
-            <a class="btn btn-solid" href="https://github.com/zzc-101/krosswork">GitHub</a>
+            <a class="btn btn-solid" href="#install" data-i18n="installCta">本机安装</a>
             <a class="btn btn-line" href="https://github.com/zzc-101/krosswork/blob/main/docs/getting-started.md" data-i18n="start">快速上手</a>
           </div>
         </div>
@@ -68,21 +81,22 @@
         </aside>
       </section>
 
-      <section class="band" aria-labelledby="install-title">
+      <section class="band" id="install" aria-labelledby="install-title">
         <div class="band-inner">
           <div>
             <p class="kicker light">01 — install</p>
             <h2 id="install-title" data-i18n="installTitle">先在本机跑起来</h2>
-            <p data-i18n="installLead">需要 Docker Engine 和 Compose v2。第一个注册账号成为平台超级管理员。</p>
+            <p data-i18n="installLead">先克隆仓库。需要 Docker Engine 和 Compose v2。第一个注册账号成为平台超级管理员。</p>
           </div>
           <div class="cmd">
-            <code>./scripts/start-cloud.sh</code>
-            <button type="button" class="copy" data-copy="./scripts/start-cloud.sh" data-i18n="copy">复制</button>
+            <pre><code>git clone https://github.com/zzc-101/krosswork.git
+cd krosswork &amp;&amp; ./scripts/start-cloud.sh</code></pre>
+            <button type="button" class="copy" data-copy="git clone https://github.com/zzc-101/krosswork.git
+cd krosswork && ./scripts/start-cloud.sh" data-i18n="copy">复制</button>
           </div>
           <p class="ports">
-            <span data-i18n="workbench">工作台</span> localhost:8787
-            <span aria-hidden="true">/</span>
-            <span data-i18n="admin">管理中心</span> localhost:8787/admin/
+            <span><span data-i18n="workbench">工作台</span> localhost:8787</span>
+            <span><span data-i18n="admin">管理中心</span> localhost:8787/admin/</span>
           </p>
         </div>
       </section>

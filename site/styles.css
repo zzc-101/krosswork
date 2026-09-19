@@ -5,9 +5,9 @@
   --line: #cfc9b8;
   --lime: #b7f34a;
   --night: #121513;
-  --serif: "Cormorant Garamond", "Noto Serif SC", "Songti SC", serif;
-  --sans: "Noto Sans SC", "PingFang SC", "Hiragino Sans GB", sans-serif;
-  --mono: "IBM Plex Mono", ui-monospace, monospace;
+  --serif: "Songti SC", "STSong", "Noto Serif SC", "Georgia", "Times New Roman", serif;
+  --sans: "PingFang SC", "Hiragino Sans GB", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+  --mono: "SF Mono", "Menlo", "IBM Plex Mono", ui-monospace, monospace;
   --pad: clamp(20px, 4vw, 56px);
   --max: 1120px;
 }
@@ -59,8 +59,11 @@ a {
 }
 
 .nav,
-main,
 footer,
+.hero,
+.pair,
+.spec,
+.steps,
 .band-inner {
   width: min(var(--max), calc(100% - var(--pad) * 2));
   margin-inline: auto;
@@ -101,6 +104,18 @@ footer,
 
 .nav nav a:hover {
   color: #3d4a12;
+}
+
+.nav nav a:focus-visible,
+.lang:focus-visible,
+.btn:focus-visible,
+.copy:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
+}
+
+.copy:focus-visible {
+  outline-color: var(--lime);
 }
 
 .lang {
@@ -165,6 +180,10 @@ h1 em {
   font-style: normal;
   font-weight: 700;
   background: linear-gradient(var(--lime), var(--lime)) 0 88% / 100% 0.28em no-repeat;
+}
+
+html[lang="en"] {
+  --serif: Georgia, "Times New Roman", serif;
 }
 
 html[lang="en"] h1 em {
@@ -268,9 +287,9 @@ h2 {
 .band {
   background: var(--night);
   color: var(--paper);
-  width: 100vw;
-  margin-left: calc(50% - 50vw);
+  width: 100%;
   padding: 56px 0 48px;
+  scroll-margin-top: 12px;
 }
 
 .band-inner {
@@ -297,9 +316,19 @@ h2 {
   background: #0c0e0c;
 }
 
+.cmd pre {
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+}
+
 .cmd code {
+  display: block;
   font-family: var(--mono);
-  font-size: clamp(1rem, 2.4vw, 1.45rem);
+  font-size: clamp(0.88rem, 2vw, 1.15rem);
+  line-height: 1.55;
+  white-space: pre;
   color: var(--lime);
 }
 
@@ -323,17 +352,20 @@ h2 {
   border-color: var(--lime);
 }
 
+.copy.is-fail {
+  border-color: #c45c4a;
+  color: #f0c4bc;
+}
+
 .ports {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 28px;
   margin: 0;
   font-family: var(--mono);
   font-size: 0.75rem;
   letter-spacing: 0.04em;
   color: #9aa392;
-}
-
-.ports span[aria-hidden] {
-  margin: 0 12px;
-  color: #5a6154;
 }
 
 .pair {

@@ -1,5 +1,25 @@
 const copyDefault = { zh: "复制", en: "Copy" };
 const copyDone = { zh: "已复制", en: "Copied" };
+const copyFail = { zh: "复制失败", en: "Copy failed" };
+
+const meta = {
+  zh: {
+    title: "Kross — 组织可自托管的云端电脑 Agent",
+    description:
+      "Kross 给每位成员一台远程电脑：长期工作区、独立 Worker、自己的文件和记忆。合上笔记本，任务还在跑。跑在你自己的 Docker 或 k3s 上。",
+    ogDescription: "每位成员一台远程电脑。整理资料、写出产物。不操作用户自己的电脑。",
+    locale: "zh_CN",
+    toggleLabel: "切换为英文",
+  },
+  en: {
+    title: "Kross — self-hosted cloud computer agent",
+    description:
+      "Kross gives each member a remote computer: a long-lived workspace, an isolated Worker, and their own files and memory. Close the laptop. The job keeps running. Runs on your Docker or k3s.",
+    ogDescription: "One remote computer per member. It does not operate the user's personal computer.",
+    locale: "en_US",
+    toggleLabel: "Switch to Chinese",
+  },
+};
 
 const en = {
   eyebrow: "Self-hosted / one computer each / MIT",
@@ -7,10 +27,11 @@ const en = {
   heroB: "The job keeps running.",
   stamp: "Lid closed. Machine still on.",
   lede: "Kross is a self-hosted cloud computer agent for organizations. Each member gets a remote computer: a long-lived workspace, an isolated Worker, and their own files and memory. Describe the work in a browser. The agent writes artifacts on that machine. It does not operate the user's personal computer.",
+  installCta: "Install locally",
   start: "Get started",
   docsNav: "Docs",
   installTitle: "Start it on one machine",
-  installLead: "Needs Docker Engine and Compose v2. The first registered account becomes the platform super administrator.",
+  installLead: "Clone the repo first. Needs Docker Engine and Compose v2. The first registered account becomes the platform super administrator.",
   copy: copyDefault.en,
   workbench: "Workbench",
   admin: "Admin",
@@ -46,6 +67,14 @@ function currentLang() {
   return localStorage.getItem("kross-lang") === "en" ? "en" : "zh";
 }
 
+function setMeta(name, content, attr) {
+  const selector = attr === "property" ? `meta[property="${name}"]` : `meta[name="${name}"]`;
+  const node = document.querySelector(selector);
+  if (node) {
+    node.setAttribute("content", content);
+  }
+}
+
 function applyLang(lang) {
   document.documentElement.lang = lang === "en" ? "en" : "zh-CN";
   document.querySelectorAll("[data-i18n]").forEach((node) => {
@@ -64,12 +93,36 @@ function applyLang(lang) {
   const toggle = document.querySelector("[data-lang-toggle]");
   if (toggle) {
     toggle.textContent = lang === "en" ? "中文" : "EN";
+    toggle.setAttribute("aria-label", meta[lang].toggleLabel);
   }
-  const title =
-    lang === "en"
-      ? "Kross — self-hosted cloud computer agent"
-      : "Kross — 组织可自托管的云端电脑 Agent";
-  document.title = title;
+  const pack = meta[lang];
+  document.title = pack.title;
+  setMeta("description", pack.description);
+  setMeta("og:title", pack.title, "property");
+  setMeta("og:description", pack.ogDescription, "property");
+  setMeta("og:locale", pack.locale, "property");
+}
+
+async function copyText(value) {
+  try {
+    await navigator.clipboard.writeText(value);
+    return true;
+  } catch {
+    const area = document.createElement("textarea");
+    area.value = value;
+    area.setAttribute("readonly", "");
+    area.style.position = "fixed";
+    area.style.left = "-9999px";
+    document.body.appendChild(area);
+    area.select();
+    try {
+      return document.execCommand("copy");
+    } catch {
+      return false;
+    } finally {
+      area.remove();
+    }
+  }
 }
 
 document.querySelector("[data-lang-toggle]")?.addEventListener("click", () => {
@@ -81,17 +134,14 @@ document.querySelector("[data-lang-toggle]")?.addEventListener("click", () => {
 document.querySelectorAll("[data-copy]").forEach((button) => {
   button.addEventListener("click", async () => {
     const value = button.getAttribute("data-copy") ?? "";
-    try {
-      await navigator.clipboard.writeText(value);
-    } catch {
-      return;
-    }
     const lang = currentLang();
-    button.textContent = copyDone[lang];
-    button.classList.add("is-done");
+    const ok = await copyText(value);
+    button.textContent = ok ? copyDone[lang] : copyFail[lang];
+    button.classList.toggle("is-done", ok);
+    button.classList.toggle("is-fail", !ok);
     window.setTimeout(() => {
       button.textContent = copyDefault[lang];
-      button.classList.remove("is-done");
+      button.classList.remove("is-done", "is-fail");
     }, 1600);
   });
 });

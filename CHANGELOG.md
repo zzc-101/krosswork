@@ -38,7 +38,7 @@
 - 平台模型档案、版本化 Skill 包、个人记忆、OIDC SSO。
 - 单机 Docker volume 与集群 JuiceFS CSI 工作区。
 - k3s Helm 安装：控制面用 Kubernetes API 调度 Worker Pod。
-- 静态介绍页（`site/`），通过 GitHub Pages 发布。
+- 静态介绍页（`site/`），通过 GitHub Pages 发布。安装命令含 clone、系统字体、分享海报图。
 - Helm chart 支持镜像 registry / pullSecrets、Ingress TLS Secret，以及可选的 RustFS Ingress（浏览器预签名上传用独立 host）。
 - 集群 Worker Pod 增加 `RuntimeDefault` seccomp、`privileged: false`、`fsGroup: 1000`，并下发 imagePullSecrets / imagePullPolicy。
 
