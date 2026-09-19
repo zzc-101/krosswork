@@ -3,6 +3,8 @@ package com.kross.config;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
@@ -403,6 +405,8 @@ public class AppProperties {
     private String namespace = "";
     private String storageClass = "kross-juicefs";
     private String workspaceSize = "10Gi";
+    private String imagePullSecrets = "";
+    private String imagePullPolicy = "IfNotPresent";
 
     public String getNamespace() {
       return namespace;
@@ -426,6 +430,36 @@ public class AppProperties {
 
     public void setWorkspaceSize(String workspaceSize) {
       this.workspaceSize = Optional.ofNullable(workspaceSize).filter(value -> !value.isBlank()).orElse("10Gi");
+    }
+
+    public String getImagePullSecrets() {
+      return imagePullSecrets;
+    }
+
+    public void setImagePullSecrets(String imagePullSecrets) {
+      this.imagePullSecrets = Optional.ofNullable(imagePullSecrets).orElse("");
+    }
+
+    public List<String> resolveImagePullSecrets() {
+      return Optional.ofNullable(imagePullSecrets)
+          .map(String::trim)
+          .filter(value -> !value.isBlank())
+          .stream()
+          .flatMap(value -> Arrays.stream(value.split(",")))
+          .map(String::trim)
+          .filter(value -> !value.isBlank())
+          .toList();
+    }
+
+    public String getImagePullPolicy() {
+      return Optional.ofNullable(imagePullPolicy)
+          .map(String::trim)
+          .filter(value -> !value.isBlank())
+          .orElse("IfNotPresent");
+    }
+
+    public void setImagePullPolicy(String imagePullPolicy) {
+      this.imagePullPolicy = Optional.ofNullable(imagePullPolicy).orElse("");
     }
 
     public Optional<String> resolveNamespace() {

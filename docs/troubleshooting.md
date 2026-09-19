@@ -51,6 +51,9 @@ docker compose version
 - 控制面需要本命名空间的 Pod/PVC 权限；旧 Pod 未消失时唤醒会 fencing 超时。
 - JuiceFS CSI Driver 与 StorageClass `kross-juicefs` 必须已安装。
 - Ingress 对 `/internal/` 不可达是预期行为；Worker 应连 Service `server:8787`。
+- `ImagePullBackOff`：节点要能拉到 `APP_WORKER_IMAGE`。本地 tag 需 `k3s ctr images import`；私有仓库要配 `images.registry` 和 `images.pullSecrets`。
+- 工作台能对话但上传/预览失败：检查 `APP_S3_PUBLIC_ENDPOINT` 浏览器能否打开。打开 `rustfs.ingress`（独立 host）或对本机 `kubectl port-forward svc/rustfs 9000:9000`。
+- Ingress TLS 需要 `tlsSecretName`（以及对应 Secret）；只设 `tls: true` 不够。
 
 ## 上下文遗忘
 

@@ -36,6 +36,7 @@ spec:
         {{- include "kross.labels" . | nindent 8 }}
         app.kubernetes.io/component: rustfs
     spec:
+      {{- include "kross.imagePullSecrets" . | nindent 6 }}
       {{- with .Values.rustfs.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
@@ -96,3 +97,39 @@ spec:
         resources:
           requests:
             storage: {{ .Values.rustfs.persistence.size }}
+{{- if .Values.rustfs.ingress.enabled }}
+{{- $host := required "rustfs.ingress.host is required when rustfs.ingress.enabled is true" .Values.rustfs.ingress.host }}
+{{- $class := coalesce .Values.rustfs.ingress.className .Values.ingress.className }}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: rustfs
+  namespace: {{ include "kross.namespace" . }}
+  labels:
+    {{- include "kross.labels" . | nindent 4 }}
+    app.kubernetes.io/component: rustfs
+  {{- with .Values.rustfs.ingress.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  ingressClassName: {{ $class | quote }}
+  {{- if .Values.rustfs.ingress.tls }}
+  tls:
+    - hosts:
+        - {{ $host | quote }}
+      secretName: {{ required "rustfs.ingress.tlsSecretName is required when rustfs.ingress.tls is true" .Values.rustfs.ingress.tlsSecretName | quote }}
+  {{- end }}
+  rules:
+    - host: {{ $host | quote }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: rustfs
+                port:
+                  number: 9000
+{{- end }}

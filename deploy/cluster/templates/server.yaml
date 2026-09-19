@@ -37,6 +37,7 @@ spec:
     spec:
       serviceAccountName: kross-server
       automountServiceAccountToken: true
+      {{- include "kross.imagePullSecrets" . | nindent 6 }}
       {{- with .Values.server.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
@@ -47,7 +48,7 @@ spec:
       {{- end }}
       containers:
         - name: server
-          image: {{ .Values.images.server }}
+          image: {{ include "kross.image" (dict "root" . "image" .Values.images.server) }}
           imagePullPolicy: {{ .Values.images.pullPolicy }}
           env:
             - name: PORT
@@ -71,7 +72,7 @@ spec:
             - name: APP_EXTERNAL_BASE_URL
               value: {{ .Values.app.externalBaseUrl | quote }}
             - name: APP_WORKER_IMAGE
-              value: {{ .Values.images.worker | quote }}
+              value: {{ include "kross.image" (dict "root" . "image" .Values.images.worker) | quote }}
             - name: APP_WORKER_RUNTIME
               value: {{ .Values.app.workerRuntime | quote }}
             - name: APP_WORKER_STORAGE
@@ -82,6 +83,10 @@ spec:
               value: {{ .Values.app.storageClass | quote }}
             - name: APP_KUBERNETES_WORKSPACE_SIZE
               value: {{ .Values.app.workspaceSize | quote }}
+            - name: APP_KUBERNETES_IMAGE_PULL_POLICY
+              value: {{ .Values.images.pullPolicy | quote }}
+            - name: APP_KUBERNETES_IMAGE_PULL_SECRETS
+              value: {{ include "kross.imagePullSecretsCsv" . | quote }}
             - name: APP_CACHE_ENABLED
               value: {{ .Values.app.cacheEnabled | quote }}
             - name: SPRING_DATA_REDIS_HOST
@@ -91,7 +96,7 @@ spec:
             - name: APP_S3_ENDPOINT
               value: http://rustfs:9000
             - name: APP_S3_PUBLIC_ENDPOINT
-              value: {{ .Values.app.s3PublicEndpoint | default "http://localhost:9000" | quote }}
+              value: {{ include "kross.s3PublicEndpoint" . | quote }}
             - name: AWS_REQUEST_CHECKSUM_CALCULATION
               value: WHEN_REQUIRED
             - name: AWS_RESPONSE_CHECKSUM_VALIDATION

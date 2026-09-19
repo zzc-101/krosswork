@@ -35,6 +35,7 @@ spec:
         {{- include "kross.labels" . | nindent 8 }}
         app.kubernetes.io/component: redis
     spec:
+      {{- include "kross.imagePullSecrets" . | nindent 6 }}
       containers:
         - name: redis
           image: {{ .Values.redis.image }}

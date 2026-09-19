@@ -8,16 +8,21 @@ replicaCount: 1
 namespace: kross
 
 images:
+  # Optional registry prefix, e.g. ghcr.io/zzc-101. Leave empty for local tags.
+  registry: ""
   server: kross-server:local
   web: kross-web:local
   worker: kross-worker:local
   pullPolicy: IfNotPresent
+  pullSecrets: []
 
 ingress:
   enabled: true
   className: traefik
   host: ""
   tls: false
+  tlsSecretName: ""
+  annotations: {}
 
 secrets:
   postgresPassword: changeme
@@ -28,10 +33,10 @@ secrets:
 app:
   externalBaseUrl: http://localhost
   publicBaseUrl: http://server:8787
-  # Browser-reachable RustFS/S3 URL used in presigned PUT/GET. ClusterIP
-  # http://rustfs:9000 is not usable from the browser. Local default assumes
-  # `kubectl port-forward svc/rustfs 9000:9000`.
-  s3PublicEndpoint: http://localhost:9000
+  # Browser-reachable RustFS/S3 URL used in presigned PUT/GET. Empty uses
+  # rustfs.ingress.host when that Ingress is enabled, otherwise localhost
+  # port-forward: `kubectl port-forward svc/rustfs 9000:9000`.
+  s3PublicEndpoint: ""
   workerRuntime: kubernetes
   workerStorage: juicefs
   cacheEnabled: true
@@ -54,6 +59,15 @@ rustfs:
     storageClass: ""
   nodeSelector: {}
   tolerations: []
+  # Host-based Ingress for browser presigned PUT/GET. Do not put this on the
+  # workbench host: S3 path-style URLs occupy `/`.
+  ingress:
+    enabled: false
+    host: ""
+    className: ""
+    tls: false
+    tlsSecretName: ""
+    annotations: {}
 
 redis:
   image: redis:7-alpine

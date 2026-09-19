@@ -35,9 +35,10 @@ spec:
         {{- include "kross.labels" . | nindent 8 }}
         app.kubernetes.io/component: web
     spec:
+      {{- include "kross.imagePullSecrets" . | nindent 6 }}
       containers:
         - name: web
-          image: {{ .Values.images.web }}
+          image: {{ include "kross.image" (dict "root" . "image" .Values.images.web) }}
           imagePullPolicy: {{ .Values.images.pullPolicy }}
           ports:
             - containerPort: 8787
@@ -55,12 +56,18 @@ metadata:
   namespace: {{ include "kross.namespace" . }}
   labels:
     {{- include "kross.labels" . | nindent 4 }}
+  {{- with .Values.ingress.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
 spec:
   ingressClassName: {{ .Values.ingress.className }}
   {{- if .Values.ingress.tls }}
+  {{- $_ := required "ingress.host is required when ingress.tls is true" .Values.ingress.host }}
   tls:
     - hosts:
         - {{ .Values.ingress.host | quote }}
+      secretName: {{ required "ingress.tlsSecretName is required when ingress.tls is true" .Values.ingress.tlsSecretName | quote }}
   {{- end }}
   rules:
     - http:

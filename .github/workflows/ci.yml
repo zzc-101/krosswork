@@ -117,6 +117,18 @@ jobs:
         with:
           version: v3.16.4
       - run: helm template kross deploy/cluster --namespace kross >/dev/null
+      - run: >
+          helm template kross deploy/cluster --namespace kross
+          --set ingress.host=kross.example.com
+          --set ingress.tls=true
+          --set ingress.tlsSecretName=kross-tls
+          --set rustfs.ingress.enabled=true
+          --set rustfs.ingress.host=s3.kross.example.com
+          --set rustfs.ingress.tls=true
+          --set rustfs.ingress.tlsSecretName=rustfs-tls
+          --set images.registry=ghcr.io/example
+          --set images.pullSecrets={regcred}
+          >/dev/null
 
   cloud-containers:
     name: Cloud container build

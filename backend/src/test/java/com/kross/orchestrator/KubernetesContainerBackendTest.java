@@ -115,6 +115,35 @@ class KubernetesContainerBackendTest {
         .isNotEmpty();
   }
 
+  @Test
+  void workerPodUsesRestrictedSecurityContext() {
+    backend.start(request("agent-1"));
+
+    Pod pod = runtime.createdPods.getFirst();
+    assertThat(pod.getSpec().getAutomountServiceAccountToken()).isFalse();
+    assertThat(pod.getSpec().getSecurityContext().getFsGroup()).isEqualTo(1000L);
+    var container = pod.getSpec().getContainers().getFirst();
+    assertThat(container.getImagePullPolicy()).isEqualTo("IfNotPresent");
+    assertThat(container.getSecurityContext().getAllowPrivilegeEscalation()).isFalse();
+    assertThat(container.getSecurityContext().getPrivileged()).isFalse();
+    assertThat(container.getSecurityContext().getSeccompProfile().getType()).isEqualTo("RuntimeDefault");
+    assertThat(container.getSecurityContext().getCapabilities().getDrop()).contains("ALL");
+  }
+
+  @Test
+  void workerPodGetsConfiguredImagePullSecretsAndPolicy() {
+    properties.getKubernetes().setImagePullSecrets("regcred, extra-reg");
+    properties.getKubernetes().setImagePullPolicy("Always");
+
+    backend.start(request("agent-1"));
+
+    Pod pod = runtime.createdPods.getFirst();
+    assertThat(pod.getSpec().getImagePullSecrets())
+        .extracting(ref -> ref.getName())
+        .containsExactly("regcred", "extra-reg");
+    assertThat(pod.getSpec().getContainers().getFirst().getImagePullPolicy()).isEqualTo("Always");
+  }
+
   private static ContainerBackend.StartRequest request(String agentId) {
     return new ContainerBackend.StartRequest(
         agentId,

@@ -4,10 +4,12 @@ import com.kross.api.ApiException;
 import com.kross.config.AppProperties;
 import io.fabric8.kubernetes.api.model.ContainerBuilder;
 import io.fabric8.kubernetes.api.model.EnvVar;
+import io.fabric8.kubernetes.api.model.LocalObjectReference;
 import io.fabric8.kubernetes.api.model.PersistentVolumeClaim;
 import io.fabric8.kubernetes.api.model.PersistentVolumeClaimBuilder;
 import io.fabric8.kubernetes.api.model.Pod;
 import io.fabric8.kubernetes.api.model.PodBuilder;
+import io.fabric8.kubernetes.api.model.PodSecurityContextBuilder;
 import io.fabric8.kubernetes.api.model.Quantity;
 import io.fabric8.kubernetes.api.model.ResourceRequirementsBuilder;
 import io.fabric8.kubernetes.api.model.SecurityContextBuilder;
@@ -123,7 +125,7 @@ public class KubernetesContainerBackend implements ContainerBackend {
     var container = new ContainerBuilder()
         .withName("worker")
         .withImage(properties.getWorkerImage())
-        .withImagePullPolicy("IfNotPresent")
+        .withImagePullPolicy(properties.getKubernetes().getImagePullPolicy())
         .withEnv(workerEnv(request))
         .withResources(new ResourceRequirementsBuilder()
             .withLimits(Map.of(
@@ -135,6 +137,10 @@ public class KubernetesContainerBackend implements ContainerBackend {
             .build())
         .withSecurityContext(new SecurityContextBuilder()
             .withAllowPrivilegeEscalation(false)
+            .withPrivileged(false)
+            .withNewSeccompProfile()
+            .withType("RuntimeDefault")
+            .endSeccompProfile()
             .withNewCapabilities()
             .addToDrop("ALL")
             .addToAdd("CHOWN", "SETUID", "SETGID")
@@ -155,6 +161,7 @@ public class KubernetesContainerBackend implements ContainerBackend {
         .withNewSpec()
         .withRestartPolicy("Never")
         .withAutomountServiceAccountToken(false)
+        .withSecurityContext(new PodSecurityContextBuilder().withFsGroup(1000L).build())
         .withContainers(List.of(container))
         .withVolumes(new VolumeBuilder()
             .withName("work")
@@ -179,6 +186,11 @@ public class KubernetesContainerBackend implements ContainerBackend {
             .endPreferredDuringSchedulingIgnoredDuringExecution()
             .endNodeAffinity()
             .build()));
+    List<String> pullSecrets = properties.getKubernetes().resolveImagePullSecrets();
+    if (!pullSecrets.isEmpty()) {
+      spec.getSpec().setImagePullSecrets(
+          pullSecrets.stream().map(LocalObjectReference::new).toList());
+    }
     return spec;
   }
 

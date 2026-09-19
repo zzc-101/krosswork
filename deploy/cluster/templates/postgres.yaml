@@ -36,6 +36,7 @@ spec:
         {{- include "kross.labels" . | nindent 8 }}
         app.kubernetes.io/component: postgres
     spec:
+      {{- include "kross.imagePullSecrets" . | nindent 6 }}
       {{- with .Values.postgres.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

@@ -107,7 +107,9 @@ Secret 使用 `APP_CREDENTIAL_MASTER_KEY` 加密后存入 `platform_settings`，
 | `APP_KUBERNETES_NAMESPACE` | `kubernetes` 运行时创建 Pod/PVC 的命名空间；不设则读取 in-cluster ServiceAccount |
 | `APP_KUBERNETES_STORAGE_CLASS` | JuiceFS StorageClass 名，默认 `kross-juicefs` |
 | `APP_KUBERNETES_WORKSPACE_SIZE` | 每用户 PVC 申请值，默认 `10Gi`，local-path/CSI 不一定强制执行 |
-| `APP_S3_*` | RustFS / S3：用户文件、产物与（集群）JuiceFS 底仓。`APP_S3_ENDPOINT` 是控制面与 Worker 的内部地址（Compose `http://rustfs:9000`）；`APP_S3_PUBLIC_ENDPOINT` 必须是浏览器能打开的地址，用于预签名 PUT/GET。集群不要填站点 URL：RustFS 默认只有 ClusterIP，本地可用 `kubectl port-forward svc/rustfs 9000:9000` 后设 `http://localhost:9000`，生产需独立 Ingress / NodePort |
+| `APP_KUBERNETES_IMAGE_PULL_POLICY` | 控制面创建 Worker Pod 时的 `imagePullPolicy`，Helm 默认跟 `images.pullPolicy` |
+| `APP_KUBERNETES_IMAGE_PULL_SECRETS` | Worker Pod 的 `imagePullSecrets`，逗号分隔；从私有仓库拉 Worker 镜像时需要 |
+| `APP_S3_*` | RustFS / S3：用户文件、产物与（集群）JuiceFS 底仓。`APP_S3_ENDPOINT` 是控制面与 Worker 的内部地址（Compose `http://rustfs:9000`）；`APP_S3_PUBLIC_ENDPOINT` 必须是浏览器能打开的地址，用于预签名 PUT/GET。集群可开 `rustfs.ingress`（独立 host，不要和工作台共用），或 `kubectl port-forward svc/rustfs 9000:9000` 后设 `http://localhost:9000` |
 | `APP_CACHE_ENABLED` | 控制面 Redis 缓存开关，默认开启；设为 `false` 直连 PostgreSQL |
 | `APP_FEISHU_ENABLED` | 飞书渠道开关。为 `true` 且配置 App ID/Secret，以及 Verification Token 或 Encrypt Key 之一后，事件订阅 URL 为 `{APP_EXTERNAL_BASE_URL}/hooks/feishu` |
 | `SPRING_DATA_REDIS_*` | 控制面连接 Redis 的地址 / 端口 / 密码（Compose 内默认 `redis:6379`） |
@@ -143,9 +145,19 @@ helm upgrade --install kross deploy/cluster -n kross --create-namespace \
   --set secrets.postgresPassword='...' \
   --set secrets.credentialMasterKey='...' \
   --set secrets.s3SecretKey='...' \
-  --set kross.externalBaseUrl=https://kross.example.com \
-  --set ingress.host=kross.example.com
+  --set app.externalBaseUrl=https://kross.example.com \
+  --set ingress.host=kross.example.com \
+  --set ingress.tls=true \
+  --set ingress.tlsSecretName=kross-tls \
+  --set rustfs.ingress.enabled=true \
+  --set rustfs.ingress.host=s3.kross.example.com \
+  --set rustfs.ingress.tls=true \
+  --set rustfs.ingress.tlsSecretName=rustfs-tls
 ```
+
+浏览器预签名上传走 `APP_S3_PUBLIC_ENDPOINT`。打开 `rustfs.ingress` 后，chart 会把该地址设成 `https://s3.kross.example.com`（或 http，取决于 `rustfs.ingress.tls`）。也可以显式 `--set app.s3PublicEndpoint=...`。不要把对象存储和工作台放在同一个 host：S3 path-style URL 占用 `/`。
+
+私有仓库时设置 `images.registry` 和 `images.pullSecrets`；Worker Pod 会拿到同一组 pull secret。本地开发仍可按下面导入镜像。
 
 `APP_PUBLIC_BASE_URL` 在 chart 里默认是 `http://server:8787`，给 Worker Pod 走
 集群 DNS。浏览器走 Ingress 到 `web`。不要把 `/internal/` 配进 Ingress。
@@ -176,8 +188,9 @@ Pod 和对应 PVC。
 
 每位成员一个常驻 Agent 容器（空闲后由控制面休眠；单机 volume / 集群 JuiceFS PVC 留下）：
 
-- 非 root（容器内 `node` 用户）、丢弃多余 capability、`no-new-privileges`；
-- CPU、内存、PID 限制；
+- 非 root（容器内 `node` 用户）、丢弃多余 capability；
+- 单机 Docker 启用 `no-new-privileges`；集群 Worker 设置 `allowPrivilegeEscalation: false`（`no_new_privs`）、`seccomp` `RuntimeDefault`、`fsGroup: 1000`。入口仍以 root 校正 `/work` 权限，随后 `su-exec` 到 `node`；
+- CPU、内存、PID 限制（集群 Pod 目前限制 CPU 和内存）；
 - `/work` 为工作区（本机 volume 或 JuiceFS 子目录）；
 - Worker 用内部令牌经 WebSocket 连 `/internal/v2/agents/ws`，浏览器不直连。
 
@@ -206,6 +219,14 @@ cd frontend && pnpm install --frozen-lockfile && pnpm typecheck && pnpm test
 cd ../worker && pnpm install --frozen-lockfile && pnpm typecheck && pnpm test
 cd ../backend && ./mvnw -B -DskipTests compile
 helm template kross deploy/cluster --namespace kross >/dev/null
+helm template kross deploy/cluster --namespace kross \
+  --set ingress.host=kross.example.com \
+  --set ingress.tls=true \
+  --set ingress.tlsSecretName=kross-tls \
+  --set rustfs.ingress.enabled=true \
+  --set rustfs.ingress.host=s3.kross.example.com \
+  --set images.registry=ghcr.io/example \
+  >/dev/null
 node scripts/check-version-consistency.mjs
 node scripts/check-doc-links.mjs
 APP_POSTGRES_PASSWORD=test-password \

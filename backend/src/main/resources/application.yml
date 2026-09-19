@@ -87,6 +87,8 @@ app:
     namespace: ${APP_KUBERNETES_NAMESPACE:}
     storage-class: ${APP_KUBERNETES_STORAGE_CLASS:kross-juicefs}
     workspace-size: ${APP_KUBERNETES_WORKSPACE_SIZE:10Gi}
+    image-pull-secrets: ${APP_KUBERNETES_IMAGE_PULL_SECRETS:}
+    image-pull-policy: ${APP_KUBERNETES_IMAGE_PULL_POLICY:IfNotPresent}
   api:
     prefix: ${APP_API_PREFIX:/api/v2}
   scheduler:

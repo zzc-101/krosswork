@@ -14,6 +14,7 @@ spec:
   template:
     spec:
       restartPolicy: OnFailure
+      {{- include "kross.imagePullSecrets" . | nindent 6 }}
       initContainers:
         - name: database
           image: {{ .Values.postgres.image }}

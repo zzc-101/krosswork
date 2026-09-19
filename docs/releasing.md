@@ -49,6 +49,14 @@ cd frontend && pnpm install --frozen-lockfile && pnpm typecheck && pnpm test
 cd ../worker && pnpm install --frozen-lockfile && pnpm typecheck && pnpm test
 cd ../backend && ./mvnw -B -DskipTests compile
 helm template kross deploy/cluster --namespace kross >/dev/null
+helm template kross deploy/cluster --namespace kross \
+  --set ingress.host=kross.example.com \
+  --set ingress.tls=true \
+  --set ingress.tlsSecretName=kross-tls \
+  --set rustfs.ingress.enabled=true \
+  --set rustfs.ingress.host=s3.kross.example.com \
+  --set images.registry=ghcr.io/example \
+  >/dev/null
 node scripts/check-version-consistency.mjs
 node scripts/check-doc-links.mjs
 pnpm --dir frontend audit --prod

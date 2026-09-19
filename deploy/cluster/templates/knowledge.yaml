@@ -36,9 +36,10 @@ spec:
         {{- include "kross.labels" . | nindent 8 }}
         app.kubernetes.io/component: knowledge
     spec:
+      {{- include "kross.imagePullSecrets" . | nindent 6 }}
       containers:
         - name: knowledge
-          image: {{ .Values.knowledge.image }}
+          image: {{ include "kross.image" (dict "root" . "image" .Values.knowledge.image) }}
           imagePullPolicy: {{ .Values.images.pullPolicy }}
           env:
             - name: KNOWLEDGE_INTERNAL_TOKEN
