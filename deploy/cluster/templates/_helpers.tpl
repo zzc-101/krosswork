@@ -29,6 +29,22 @@ imagePullSecrets:
 {{- join "," (.Values.images.pullSecrets | default list) -}}
 {{- end }}
 
+{{- define "kross.nodeSelectorCsv" -}}
+{{- $pairs := list -}}
+{{- range $key, $value := . -}}
+{{- $pairs = append $pairs (printf "%s=%s" $key $value) -}}
+{{- end -}}
+{{- join "," $pairs -}}
+{{- end }}
+
+{{- define "kross.postgresFqdn" -}}
+{{- printf "postgres.%s.svc.cluster.local" (include "kross.namespace" .) -}}
+{{- end }}
+
+{{- define "kross.rustfsFqdn" -}}
+{{- printf "rustfs.%s.svc.cluster.local" (include "kross.namespace" .) -}}
+{{- end }}
+
 {{- define "kross.s3PublicEndpoint" -}}
 {{- $explicit := default "" .Values.app.s3PublicEndpoint | trim -}}
 {{- if $explicit -}}

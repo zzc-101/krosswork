@@ -15,8 +15,9 @@ Kross 通过平台身份、每成员 Docker Worker、单工作区路径边界和
 
 ## 身份与角色
 
-- 登录使用 HttpOnly `APP_SESSION` Cookie。
-- 企业 SSO 由控制面验证 OIDC IdP 的身份令牌。
+- 登录使用 HttpOnly `APP_SESSION` Cookie，`SameSite=Lax`；`APP_SESSION_COOKIE_SECURE=true`（Helm 在 Ingress TLS 或 `https://` 外部地址时打开）时带 `Secure`。
+- 浏览器变更类请求需要 CSRF：控制面下发可读 `XSRF-TOKEN` Cookie，工作台和管理中心回传 `X-XSRF-TOKEN`。Worker `/internal/`、MCP、飞书 `/hooks/` 不走这套。
+- 企业 SSO 由控制面验证 OIDC IdP 的身份令牌。自助注册默认打开，由超管在平台设置里开关，安装时不默认关闭。
 - SSO Client Secret、模型 API Key 与工作连接器 OAuth token 使用 `APP_CREDENTIAL_MASTER_KEY` 加密。连接器 token 只留在控制面，不进 Worker 或 `/work`。
 - 超级管理员管理平台，组织管理员管理本组织，普通成员只使用工作台。
 - `APP_DEV_IDENTITY` 仅限本机冒烟，生产必须关闭。

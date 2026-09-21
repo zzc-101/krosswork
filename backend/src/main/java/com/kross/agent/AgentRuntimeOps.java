@@ -195,6 +195,13 @@ class AgentRuntimeOps {
       log.info("Agent workspace already running");
       return;
     }
+    if (inspection.filter(AgentRuntimeOps::isWorkspaceStarting).isPresent()) {
+      agent.setStatus("starting");
+      agent.setLastError(null);
+      agents.updateRuntime(agent);
+      log.info("Agent workspace still starting");
+      return;
+    }
     String token = issueToken(agent);
     agent.setStatus("starting");
     agent.setLastError(null);
@@ -359,5 +366,14 @@ class AgentRuntimeOps {
     if (!agents.hasActiveLease(agentId, messageId, leaseId)) {
       throw ApiException.conflict("job_lease_lost", "Agent job lease is no longer active");
     }
+  }
+
+  private static boolean isWorkspaceStarting(ContainerBackend.BackendInspection inspection) {
+    return Optional.ofNullable(inspection)
+        .map(ContainerBackend.BackendInspection::state)
+        .map(String::trim)
+        .map(String::toLowerCase)
+        .filter(state -> "pending".equals(state) || "unknown".equals(state))
+        .isPresent();
   }
 }

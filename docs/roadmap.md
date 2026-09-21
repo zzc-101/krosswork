@@ -14,7 +14,20 @@
 - 知识库：可选 MCP 检索，不是默认必装。
 - 自动任务 V1：一次性 / cron（最短 1 小时），Postgres `SKIP LOCKED` 认领，创建者身份投递。
 
-上线前仍缺的是验收，不是功能清单：生产身份与 CSRF、对象存储、限流/配额、备份恢复、工作台到 Worker 的纵向验收。集群多副本与滚动发布也还没有当成已验收能力。
+上线前仍缺的是验收，不是功能清单：对象存储、限流/配额、备份恢复。集群多副本与滚动发布也还没有当成已验收能力。
+
+## 现在优先
+
+私有化进门先收这四条，自助注册保持默认打开。
+
+1. **工作台到 Worker 纵向跑通**  
+   Pending 的 Worker Pod 不再被调度器立刻删掉重建；发消息后应能起 Pod、挂盘、连上控制面。
+2. **离线 / 内网可装**  
+   `scripts/export-cluster-images.sh` 导出三张镜像；各节点 `k3s ctr images import`，或 `images.registry` + `images.pullSecrets`。
+3. **生产身份**  
+   浏览器 API 走 CSRF（`XSRF-TOKEN` / `X-XSRF-TOKEN`）；HTTPS 下会话 Cookie `Secure`。不关闭默认注册。
+4. **Worker 资源**  
+   只配 CPU / 内存 / 工作区硬盘：Helm `app.agentCpuMillis`、`app.agentMemoryBytes`、`app.workspaceSize`。不做人头、并发、对话次数闸。
 
 ## 近期：把现有面做完整
 

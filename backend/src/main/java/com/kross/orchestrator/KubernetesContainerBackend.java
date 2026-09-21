@@ -68,7 +68,7 @@ public class KubernetesContainerBackend implements ContainerBackend {
     String namespace = namespace();
     String podName = KubernetesAgentNames.pod(agentId);
     Optional<Pod> existing = runtime.getPod(namespace, podName);
-    if (existing.filter(KubernetesContainerBackend::isUsable).isPresent()) {
+    if (existing.filter(KubernetesContainerBackend::isLiveAttempt).isPresent()) {
       return handle(agentId, existing.get());
     }
     ensureVolume(agentId);
@@ -191,6 +191,10 @@ public class KubernetesContainerBackend implements ContainerBackend {
       spec.getSpec().setImagePullSecrets(
           pullSecrets.stream().map(LocalObjectReference::new).toList());
     }
+    Map<String, String> nodeSelector = properties.getKubernetes().nodeSelectorMap();
+    if (!nodeSelector.isEmpty()) {
+      spec.getSpec().setNodeSelector(nodeSelector);
+    }
     return spec;
   }
 
@@ -257,12 +261,29 @@ public class KubernetesContainerBackend implements ContainerBackend {
   }
 
   static boolean isUsable(Pod pod) {
-    if (pod == null || pod.getMetadata() == null || pod.getMetadata().getDeletionTimestamp() != null) {
+    return existsAndNotDeleting(pod)
+        && Optional.ofNullable(pod.getStatus())
+            .map(status -> status.getPhase())
+            .filter(phase -> "Running".equals(phase))
+            .isPresent();
+  }
+
+  static boolean isLiveAttempt(Pod pod) {
+    if (!existsAndNotDeleting(pod)) {
       return false;
     }
     return Optional.ofNullable(pod.getStatus())
         .map(status -> status.getPhase())
-        .filter(phase -> "Running".equals(phase))
+        .map(String::trim)
+        .filter(phase -> !phase.isBlank())
+        .map(phase -> "Running".equals(phase) || "Pending".equals(phase))
+        .orElse(true);
+  }
+
+  private static boolean existsAndNotDeleting(Pod pod) {
+    return Optional.ofNullable(pod)
+        .map(item -> item.getMetadata())
+        .filter(meta -> meta.getDeletionTimestamp() == null)
         .isPresent();
   }
 }

@@ -36,6 +36,14 @@ spec:
         app.kubernetes.io/component: redis
     spec:
       {{- include "kross.imagePullSecrets" . | nindent 6 }}
+      {{- with .Values.redis.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.redis.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       containers:
         - name: redis
           image: {{ .Values.redis.image }}

@@ -46,12 +46,15 @@ spec:
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      enableServiceLinks: false
       containers:
         - name: server
           image: {{ include "kross.image" (dict "root" . "image" .Values.images.server) }}
           imagePullPolicy: {{ .Values.images.pullPolicy }}
           env:
             - name: PORT
+              value: "8787"
+            - name: SERVER_PORT
               value: "8787"
             - name: SPRING_DATASOURCE_URL
               value: jdbc:postgresql://postgres:5432/kross
@@ -87,6 +90,18 @@ spec:
               value: {{ .Values.images.pullPolicy | quote }}
             - name: APP_KUBERNETES_IMAGE_PULL_SECRETS
               value: {{ include "kross.imagePullSecretsCsv" . | quote }}
+            {{- with .Values.app.workerNodeSelector }}
+            - name: APP_KUBERNETES_NODE_SELECTOR
+              value: {{ include "kross.nodeSelectorCsv" . | quote }}
+            {{- end }}
+            - name: APP_AGENT_CPU_MILLIS
+              value: {{ .Values.app.agentCpuMillis | quote }}
+            - name: APP_AGENT_MEMORY_BYTES
+              value: {{ .Values.app.agentMemoryBytes | quote }}
+            {{- with .Values.app.schedulerPollMs }}
+            - name: APP_SCHEDULER_POLL_MS
+              value: {{ . | quote }}
+            {{- end }}
             - name: APP_CACHE_ENABLED
               value: {{ .Values.app.cacheEnabled | quote }}
             - name: SPRING_DATA_REDIS_HOST
@@ -103,6 +118,8 @@ spec:
               value: WHEN_REQUIRED
             - name: APP_S3_BUCKET
               value: kross
+            - name: APP_S3_EXTRA_BUCKETS
+              value: {{ .Values.juicefs.bucket | quote }}
             - name: APP_S3_ACCESS_KEY
               valueFrom:
                 secretKeyRef:
@@ -115,6 +132,10 @@ spec:
                   key: s3-secret-key
             - name: APP_DEV_IDENTITY
               value: "0"
+            {{- if or .Values.ingress.tls (hasPrefix "https://" .Values.app.externalBaseUrl) }}
+            - name: APP_SESSION_COOKIE_SECURE
+              value: "true"
+            {{- end }}
             {{- if .Values.knowledge.enabled }}
             - name: APP_KNOWLEDGE_BASE_URL
               value: http://knowledge:8090

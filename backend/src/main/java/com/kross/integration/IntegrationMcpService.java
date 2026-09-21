@@ -23,6 +23,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -44,6 +45,7 @@ public class IntegrationMcpService {
   private final HttpClient http;
   private final ConcurrentHashMap<String, String> sessions = new ConcurrentHashMap<>();
 
+  @Autowired
   public IntegrationMcpService(
       IntegrationService integrations,
       AgentTokenDirectory tokens,

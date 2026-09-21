@@ -100,6 +100,9 @@ Secret 使用 `APP_CREDENTIAL_MASTER_KEY` 加密后存入 `platform_settings`，
 | `APP_PUBLIC_BASE_URL` | Worker 用来连控制面的地址。单机用 `http://kross-server:8787`；集群用 Service DNS，例如 `http://server:8787` |
 | `APP_EXTERNAL_BASE_URL` | 浏览器访问控制面的公开地址，用于生成固定的 SSO 和工作连接器 OAuth 回调；生产环境应使用 HTTPS，例如 `https://kross.example.com`。连接器回调为 `{APP_EXTERNAL_BASE_URL}/api/v2/integrations/oauth/callback` |
 | `APP_DEV_IDENTITY` | `1` 跳过登录；默认 `0`，生产必须为 `0` |
+| `APP_SESSION_COOKIE_SECURE` | 会话与 CSRF Cookie 是否 `Secure`。本地 HTTP 保持默认 `false`；Helm 在 TLS 或 `https://` 外部地址时设为 `true` |
+| `APP_AGENT_CPU_MILLIS` | Worker CPU 申请/限制，毫核。Compose 默认 2000；集群 Helm `app.agentCpuMillis` 默认 500 |
+| `APP_AGENT_MEMORY_BYTES` | Worker 内存申请/限制。Compose 默认 1Gi；集群 Helm `app.agentMemoryBytes` 默认 512Mi |
 | `APP_ORCHESTRATOR_MANAGER_ID` | Docker 资源归属标签，多实例必须唯一 |
 | `APP_WORKER_IMAGE` | Worker 镜像，Compose 默认 `kross-worker:local` |
 | `APP_WORKER_STORAGE` | `local`（默认，本机 Docker volume）或 `juicefs`（k3s 集群必填） |
@@ -138,7 +141,9 @@ sidecar 或 `kross-node`。
 
 ```bash
 helm repo add juicefs https://juicedata.github.io/charts/
-helm upgrade --install juicefs-csi-driver juicefs/juicefs-csi-driver -n kube-system --create-namespace
+# k3s kubelet 在 /var/lib/kubelet，不要设成 /var/lib/rancher/k3s/agent/kubelet
+helm upgrade --install juicefs-csi-driver juicefs/juicefs-csi-driver -n kube-system --create-namespace \
+  --set kubeletDir=/var/lib/kubelet
 
 # 每台节点都能 pull 这三个镜像，或使用 k3s ctr images import
 helm upgrade --install kross deploy/cluster -n kross --create-namespace \
@@ -155,6 +160,12 @@ helm upgrade --install kross deploy/cluster -n kross --create-namespace \
   --set rustfs.ingress.tlsSecretName=rustfs-tls
 ```
 
+`kross-init` 是普通 Job，不是 Helm hook，也不会再拉 `rustfs/rc`。产物 bucket `kross` 由控制面启动时创建；JuiceFS 底仓 `kross-jfs` 由 format 或控制面补齐。
+JuiceFS CSI 在 `kube-system` 里挂载，元数据地址和底仓 S3 URL 必须用
+`postgres.<ns>.svc.cluster.local` / `rustfs.<ns>.svc.cluster.local`，短名
+`postgres` 只在 `kross` 命名空间能解析。升级时 Job 用 lookup 跳过重建，并加上
+`helm.sh/resource-policy: keep`，避免 Helm 把已完成的 Job 当孤儿删掉再跑一遍。
+
 浏览器预签名上传走 `APP_S3_PUBLIC_ENDPOINT`。打开 `rustfs.ingress` 后，chart 会把该地址设成 `https://s3.kross.example.com`（或 http，取决于 `rustfs.ingress.tls`）。也可以显式 `--set app.s3PublicEndpoint=...`。不要把对象存储和工作台放在同一个 host：S3 path-style URL 占用 `/`。
 
 私有仓库时设置 `images.registry` 和 `images.pullSecrets`；Worker Pod 会拿到同一组 pull secret。本地开发仍可按下面导入镜像。
@@ -162,7 +173,13 @@ helm upgrade --install kross deploy/cluster -n kross --create-namespace \
 `APP_PUBLIC_BASE_URL` 在 chart 里默认是 `http://server:8787`，给 Worker Pod 走
 集群 DNS。浏览器走 Ingress 到 `web`。不要把 `/internal/` 配进 Ingress。
 
-控制面可以水平扩副本。自动任务与租约回收共用 `AgentScheduler` tick（约 5s）：
+控制面可以水平扩副本。Postgres / RustFS / Redis / Web / 控制面都可以用 `nodeSelector`
+钉到指定节点；Worker Pod 用 `app.workerNodeSelector`。实验床三节点时把数据面留在
+k3s server 所在机，API 和 Worker 放到 agent 上，避免单机 CPU 打满。
+Worker 的 CPU/内存来自 `app.agentCpuMillis` / `app.agentMemoryBytes`（默认 500m /
+512Mi）。2 核实验节点不要用应用默认的 2000m：节点可分配 CPU 已经被 kubelet 和
+CSI 占掉一部分，调度会一直 `Insufficient cpu`，工作台消息也就没有回复。
+自动任务与租约回收共用 `AgentScheduler` tick（约 5s）：
 每个副本都会跑，正确性靠 Postgres `FOR UPDATE SKIP LOCKED` 认领到期行，并在
 同一条更新里写出下一墙钟（一次性任务标 `done`）。到期判断用库时钟
 `next_run_at <= now()`，不绑 pod，也不接 `APP_SCHEDULER_OWNER` 选主。投递走现有
@@ -177,7 +194,8 @@ helm upgrade --install kross deploy/cluster -n kross --create-namespace \
 docker build -f deploy/local/docker/control-plane.Dockerfile -t kross-server:local .
 docker build -f deploy/local/docker/web.Dockerfile -t kross-web:local .
 docker build -f deploy/local/docker/worker.Dockerfile -t kross-worker:local .
-docker save kross-server:local kross-web:local kross-worker:local | gzip > kross-images.tar.gz
+./scripts/export-cluster-images.sh
+# 或：docker save kross-server:local kross-web:local kross-worker:local | gzip > kross-images.tar.gz
 # 各 k3s 节点：gunzip -c kross-images.tar.gz | k3s ctr images import -
 ```
 

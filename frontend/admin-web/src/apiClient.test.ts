@@ -48,6 +48,28 @@ const tokenUsage = {
 };
 
 describe('AdminApiClient', () => {
+  it('sends CSRF header from the XSRF-TOKEN cookie on POST', async () => {
+    Object.defineProperty(globalThis, 'document', {
+      configurable: true,
+      value: { cookie: 'XSRF-TOKEN=token%2Dvalue' }
+    });
+    let csrf: string | null = null;
+    const api = new AdminApiClient({
+      baseUrl: 'http://kross.test',
+      fetch: async (_url, init) => {
+        csrf = new Headers(init?.headers).get('X-XSRF-TOKEN');
+        return ok({
+          user: { userId: 'u1', username: 'lin', displayName: 'Lin', platformRole: 'user' },
+          memberships: [],
+          canAccessAdmin: false
+        });
+      }
+    });
+    await api.login({ username: 'lin', password: 'password1' });
+    expect(csrf).toBe('token-value');
+    Reflect.deleteProperty(globalThis, 'document');
+  });
+
   it('sends organization header and session cookies', async () => {
     let headers: Headers | undefined;
     let credentials: RequestCredentials | undefined;

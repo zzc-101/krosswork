@@ -632,6 +632,8 @@ export class AgentApiClient {
       headers.set('x-app-organization-id', this.organizationId);
     }
     if (init.body !== undefined) headers.set('content-type', 'application/json');
+    const csrf = csrfHeader();
+    if (csrf) headers.set('X-XSRF-TOKEN', csrf);
     const response = await this.fetcher(new URL(path, this.options.baseUrl ?? location.origin), {
       method: init.method ?? 'GET',
       headers,
@@ -665,6 +667,15 @@ export class AgentApiClient {
     }
     return parsed.data;
   }
+}
+
+function csrfHeader(): string | undefined {
+  if (typeof document === 'undefined') {
+    return undefined;
+  }
+  const match = /(?:^|;\s*)XSRF-TOKEN=([^;]*)/.exec(document.cookie);
+  const token = match?.[1];
+  return token ? decodeURIComponent(token) : undefined;
 }
 
 function parseSseChunk(chunk: string): ChannelEvent | undefined {

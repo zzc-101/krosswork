@@ -8,6 +8,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.stereotype.Component;
+import software.amazon.awssdk.awscore.exception.AwsErrorDetails;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.core.checksums.RequestChecksumCalculation;
@@ -60,15 +61,31 @@ public class ObjectStorage {
   }
 
   public void ensureBucket() {
+    ensureNamedBucket(properties.getBucket(), true);
+    properties.extraBucketNames().stream()
+        .filter(name -> !name.equals(properties.getBucket()))
+        .forEach(name -> ensureNamedBucket(name, false));
+  }
+
+  private void ensureNamedBucket(String bucket, boolean cors) {
     try {
-      client.headBucket(builder -> builder.bucket(properties.getBucket()));
-    } catch (software.amazon.awssdk.services.s3.model.S3Exception error) {
-      client.createBucket(CreateBucketRequest.builder().bucket(properties.getBucket()).build());
+      client.headBucket(builder -> builder.bucket(bucket));
+    } catch (S3Exception error) {
+      try {
+        client.createBucket(CreateBucketRequest.builder().bucket(bucket).build());
+      } catch (S3Exception createError) {
+        if (!alreadyExists(createError)) {
+          throw createError;
+        }
+      }
+    }
+    if (!cors) {
+      return;
     }
     try {
       client.putBucketCors(PutBucketCorsRequest.builder()
-          .bucket(properties.getBucket())
-          .corsConfiguration(cors -> cors.corsRules(CORSRule.builder()
+          .bucket(bucket)
+          .corsConfiguration(corsConfig -> corsConfig.corsRules(CORSRule.builder()
               .allowedHeaders("*")
               .allowedMethods("GET", "PUT", "HEAD")
               .allowedOrigins("*")
@@ -82,6 +99,16 @@ public class ObjectStorage {
         throw error;
       }
     }
+  }
+
+  private static boolean alreadyExists(S3Exception error) {
+    if (error.statusCode() == 409) {
+      return true;
+    }
+    return Optional.ofNullable(error.awsErrorDetails())
+        .map(AwsErrorDetails::errorCode)
+        .filter(code -> "BucketAlreadyOwnedByYou".equals(code) || "BucketAlreadyExists".equals(code))
+        .isPresent();
   }
 
   public SignedUrl presignPut(String key, Audience audience, String mimeType, Instant expiresAt) {

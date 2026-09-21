@@ -42,6 +42,14 @@ app:
   cacheEnabled: true
   storageClass: kross-juicefs
   workspaceSize: 10Gi
+  # Worker Pod requests/limits. 2000m will not schedule on 2-core k3s nodes
+  # that already run kubelet and CSI.
+  agentCpuMillis: 500
+  agentMemoryBytes: 536870912
+  # Optional scheduler tick override in milliseconds. Empty keeps 5000.
+  schedulerPollMs: ""
+  # Optional Worker Pod nodeSelector, e.g. kubernetes.io/hostname: worker-1
+  workerNodeSelector: {}
 
 postgres:
   image: pgvector/pgvector:pg17
@@ -53,7 +61,6 @@ postgres:
 
 rustfs:
   image: rustfs/rustfs:1.0.0
-  rcImage: rustfs/rc:v0.1.36
   persistence:
     size: 40Gi
     storageClass: ""
@@ -71,8 +78,14 @@ rustfs:
 
 redis:
   image: redis:7-alpine
+  nodeSelector: {}
+  tolerations: []
 
 server:
+  nodeSelector: {}
+  tolerations: []
+
+web:
   nodeSelector: {}
   tolerations: []
 
@@ -80,6 +93,7 @@ juicefs:
   volumeName: kross-work
   metaDatabase: kross_jfs
   bucket: kross-jfs
+  # Official JuiceFS CLI image. Format also creates this S3 bucket if missing.
   formatImage: juicedata/mount:ce-v1.4.1
 
 rbac:
@@ -99,6 +113,8 @@ knowledge:
   embeddingModelDir: ""
   embeddingHub: huggingface
   embeddingDevice: auto
+  nodeSelector: {}
+  tolerations: []
 
 feishu:
   enabled: false

@@ -37,6 +37,14 @@ spec:
         app.kubernetes.io/component: knowledge
     spec:
       {{- include "kross.imagePullSecrets" . | nindent 6 }}
+      {{- with .Values.knowledge.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.knowledge.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       containers:
         - name: knowledge
           image: {{ include "kross.image" (dict "root" . "image" .Values.knowledge.image) }}

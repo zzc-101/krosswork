@@ -36,6 +36,14 @@ spec:
         app.kubernetes.io/component: web
     spec:
       {{- include "kross.imagePullSecrets" . | nindent 6 }}
+      {{- with .Values.web.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.web.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       containers:
         - name: web
           image: {{ include "kross.image" (dict "root" . "image" .Values.images.web) }}

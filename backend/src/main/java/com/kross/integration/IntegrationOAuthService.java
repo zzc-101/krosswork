@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -31,6 +32,7 @@ public class IntegrationOAuthService {
   private final AppProperties properties;
   private final SecureRandom random = new SecureRandom();
 
+  @Autowired
   public IntegrationOAuthService(ObjectMapper mapper, AppProperties properties) {
     this(mapper, properties, HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(8)).build());
   }

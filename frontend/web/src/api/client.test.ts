@@ -97,6 +97,30 @@ describe('AgentApiClient.listMessages', () => {
   });
 });
 
+describe('AgentApiClient CSRF', () => {
+  it('POST 请求带上 XSRF-TOKEN cookie 对应的头', async () => {
+    Object.defineProperty(globalThis, 'document', {
+      configurable: true,
+      value: { cookie: 'APP_SESSION=hidden; XSRF-TOKEN=abc%2Fdef' }
+    });
+    let csrf: string | null = null;
+    const api = new AgentApiClient({
+      baseUrl: 'http://localhost:8787',
+      fetch: async (_url, init) => {
+        csrf = new Headers(init?.headers).get('X-XSRF-TOKEN');
+        return new Response(JSON.stringify({
+          code: 0,
+          message: 'ok',
+          data: { user: { userId: 'u1', username: 'lin', displayName: 'Lin', platformRole: 'user' }, memberships: [], canAccessAdmin: false }
+        }), { status: 200, headers: { 'content-type': 'application/json' } });
+      }
+    });
+    await api.login({ username: 'lin', password: 'password1' });
+    expect(csrf).toBe('abc/def');
+    Reflect.deleteProperty(globalThis, 'document');
+  });
+});
+
 describe('isUnauthorizedError', () => {
   it('只把 401 API 错误识别为登录失效', () => {
     expect(isUnauthorizedError(new ApiError(401, 'unauthorized', '未登录'))).toBe(true);

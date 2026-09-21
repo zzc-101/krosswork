@@ -50,6 +50,30 @@ class KubernetesContainerBackendTest {
   }
 
   @Test
+  void startKeepsPendingPodWithoutRecreate() {
+    Pod pending = runningPod("agent-1", "uid-pending", null);
+    pending.getStatus().setPhase("Pending");
+    runtime.pods.put(KubernetesAgentNames.pod("agent-1"), pending);
+
+    ContainerBackend.BackendHandle handle = backend.start(request("agent-1"));
+
+    assertThat(handle.containerId()).isEqualTo("uid-pending");
+    assertThat(runtime.createdPods).isEmpty();
+  }
+
+  @Test
+  void startRecreatesFailedPod() {
+    Pod failed = runningPod("agent-1", "uid-failed", "node-a");
+    failed.getStatus().setPhase("Failed");
+    runtime.pods.put(KubernetesAgentNames.pod("agent-1"), failed);
+
+    ContainerBackend.BackendHandle handle = backend.start(request("agent-1"));
+
+    assertThat(handle.containerId()).isNotEqualTo("uid-failed");
+    assertThat(runtime.createdPods).hasSize(1);
+  }
+
+  @Test
   void startWaitsForTerminatingPodThenCreates() {
     Pod terminating = runningPod("agent-1", "uid-old", "node-a");
     terminating.getMetadata().setDeletionTimestamp("2026-08-27T00:00:00Z");
@@ -142,6 +166,17 @@ class KubernetesContainerBackendTest {
         .extracting(ref -> ref.getName())
         .containsExactly("regcred", "extra-reg");
     assertThat(pod.getSpec().getContainers().getFirst().getImagePullPolicy()).isEqualTo("Always");
+  }
+
+  @Test
+  void workerPodGetsConfiguredNodeSelector() {
+    properties.getKubernetes().setNodeSelector("kubernetes.io/hostname=test4, kross.role=worker");
+
+    backend.start(request("agent-1"));
+
+    assertThat(runtime.createdPods.getFirst().getSpec().getNodeSelector())
+        .containsEntry("kubernetes.io/hostname", "test4")
+        .containsEntry("kross.role", "worker");
   }
 
   private static ContainerBackend.StartRequest request(String agentId) {

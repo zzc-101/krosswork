@@ -4,7 +4,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
@@ -23,6 +25,7 @@ public class AppProperties {
   private String workerRuntime = "local";
   private String workerStorage = "local";
   private String juicefsMount = "";
+  private boolean sessionCookieSecure = false;
   private final Api api = new Api();
   private final Scheduler scheduler = new Scheduler();
   private final Agent agent = new Agent();
@@ -129,6 +132,14 @@ public class AppProperties {
 
   public void setJuicefsMount(String juicefsMount) {
     this.juicefsMount = Optional.ofNullable(juicefsMount).orElse("");
+  }
+
+  public boolean isSessionCookieSecure() {
+    return sessionCookieSecure;
+  }
+
+  public void setSessionCookieSecure(boolean sessionCookieSecure) {
+    this.sessionCookieSecure = sessionCookieSecure;
   }
 
   public String getWorkerRuntime() {
@@ -328,6 +339,7 @@ public class AppProperties {
     private String publicEndpoint = "http://127.0.0.1:9000";
     private String region = "us-east-1";
     private String bucket = "kross";
+    private String extraBuckets = "";
     private String accessKey = "kross";
     private String secretKey = "kross-s3-secret";
     private boolean pathStyle = true;
@@ -363,6 +375,21 @@ public class AppProperties {
 
     public void setBucket(String bucket) {
       this.bucket = bucket;
+    }
+
+    public String getExtraBuckets() {
+      return extraBuckets;
+    }
+
+    public void setExtraBuckets(String extraBuckets) {
+      this.extraBuckets = Optional.ofNullable(extraBuckets).orElse("");
+    }
+
+    public List<String> extraBucketNames() {
+      return Arrays.stream(Optional.ofNullable(extraBuckets).orElse("").split(","))
+          .map(String::trim)
+          .filter(value -> !value.isEmpty())
+          .toList();
     }
 
     public String getAccessKey() {
@@ -407,6 +434,7 @@ public class AppProperties {
     private String workspaceSize = "10Gi";
     private String imagePullSecrets = "";
     private String imagePullPolicy = "IfNotPresent";
+    private String nodeSelector = "";
 
     public String getNamespace() {
       return namespace;
@@ -460,6 +488,33 @@ public class AppProperties {
 
     public void setImagePullPolicy(String imagePullPolicy) {
       this.imagePullPolicy = Optional.ofNullable(imagePullPolicy).orElse("");
+    }
+
+    public String getNodeSelector() {
+      return nodeSelector;
+    }
+
+    public void setNodeSelector(String nodeSelector) {
+      this.nodeSelector = Optional.ofNullable(nodeSelector).orElse("");
+    }
+
+    public Map<String, String> nodeSelectorMap() {
+      Map<String, String> selector = new LinkedHashMap<>();
+      Arrays.stream(Optional.ofNullable(nodeSelector).orElse("").split(","))
+          .map(String::trim)
+          .filter(value -> !value.isEmpty())
+          .forEach(pair -> {
+            int split = pair.indexOf('=');
+            if (split <= 0 || split == pair.length() - 1) {
+              return;
+            }
+            String key = pair.substring(0, split).trim();
+            String value = pair.substring(split + 1).trim();
+            if (!key.isEmpty() && !value.isEmpty()) {
+              selector.put(key, value);
+            }
+          });
+      return Map.copyOf(selector);
     }
 
     public Optional<String> resolveNamespace() {

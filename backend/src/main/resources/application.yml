@@ -9,6 +9,7 @@ server:
         name: APP_SESSION
         http-only: true
         same-site: lax
+        secure: ${APP_SESSION_COOKIE_SECURE:false}
 
 spring:
   application:
@@ -83,12 +84,14 @@ app:
   worker-runtime: ${APP_WORKER_RUNTIME:local}
   worker-storage: ${APP_WORKER_STORAGE:local}
   juicefs-mount: ${APP_JUICEFS_MOUNT:}
+  session-cookie-secure: ${APP_SESSION_COOKIE_SECURE:false}
   kubernetes:
     namespace: ${APP_KUBERNETES_NAMESPACE:}
     storage-class: ${APP_KUBERNETES_STORAGE_CLASS:kross-juicefs}
     workspace-size: ${APP_KUBERNETES_WORKSPACE_SIZE:10Gi}
     image-pull-secrets: ${APP_KUBERNETES_IMAGE_PULL_SECRETS:}
     image-pull-policy: ${APP_KUBERNETES_IMAGE_PULL_POLICY:IfNotPresent}
+    node-selector: ${APP_KUBERNETES_NODE_SELECTOR:}
   api:
     prefix: ${APP_API_PREFIX:/api/v2}
   scheduler:
@@ -118,6 +121,7 @@ app:
     public-endpoint: ${APP_S3_PUBLIC_ENDPOINT:http://127.0.0.1:9000}
     region: ${APP_S3_REGION:us-east-1}
     bucket: ${APP_S3_BUCKET:kross}
+    extra-buckets: ${APP_S3_EXTRA_BUCKETS:}
     access-key: ${APP_S3_ACCESS_KEY:kross}
     secret-key: ${APP_S3_SECRET_KEY:kross-s3-secret}
     path-style: true

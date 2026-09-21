@@ -15,6 +15,8 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.csrf.CsrfFilter;
 
 @Configuration
 @RequiredArgsConstructor
@@ -26,7 +28,10 @@ public class SecurityConfig {
   SecurityFilterChain securityFilterChain(HttpSecurity http, IdentityFilter identityFilter) throws Exception {
     String api = properties.getApi().getPrefix();
     return http
-        .csrf(AbstractHttpConfigurer::disable)
+        .csrf(csrf -> csrf
+            .csrfTokenRepository(csrfRepository())
+            .csrfTokenRequestHandler(new SpaCsrfTokenRequestHandler())
+            .ignoringRequestMatchers("/health", "/internal/**", "/mcp/**", "/hooks/**"))
         .httpBasic(AbstractHttpConfigurer::disable)
         .formLogin(AbstractHttpConfigurer::disable)
         .logout(AbstractHttpConfigurer::disable)
@@ -49,7 +54,17 @@ public class SecurityConfig {
             .requestMatchers(api + "/**").authenticated()
             .anyRequest().denyAll())
         .addFilterBefore(identityFilter, UsernamePasswordAuthenticationFilter.class)
+        .addFilterAfter(new CsrfCookieFilter(), CsrfFilter.class)
         .build();
+  }
+
+  private CookieCsrfTokenRepository csrfRepository() {
+    CookieCsrfTokenRepository repository = CookieCsrfTokenRepository.withHttpOnlyFalse();
+    repository.setCookieCustomizer(cookie -> cookie
+        .path("/")
+        .sameSite("Lax")
+        .secure(properties.isSessionCookieSecure()));
+    return repository;
   }
 
   private void writeError(HttpServletResponse response, int status, String message) throws IOException {

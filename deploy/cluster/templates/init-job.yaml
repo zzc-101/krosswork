@@ -1,3 +1,9 @@
+{{- /*
+  Regular Job, not a Helm hook, so install is not blocked on JuiceFS format.
+  lookup skips recreation on upgrade; helm.sh/resource-policy keep prevents
+  Helm from deleting the Job when the template is omitted.
+*/ -}}
+{{- if not (lookup "batch/v1" "Job" (include "kross.namespace" .) "kross-init") }}
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -5,12 +11,12 @@ metadata:
   namespace: {{ include "kross.namespace" . }}
   labels:
     {{- include "kross.labels" . | nindent 4 }}
+    app.kubernetes.io/component: init
   annotations:
-    helm.sh/hook: post-install,post-upgrade
-    helm.sh/hook-delete-policy: before-hook-creation
-    helm.sh/hook-weight: "5"
+    helm.sh/resource-policy: keep
 spec:
   backoffLimit: 8
+  ttlSecondsAfterFinished: 86400
   template:
     spec:
       restartPolicy: OnFailure
@@ -18,6 +24,7 @@ spec:
       initContainers:
         - name: database
           image: {{ .Values.postgres.image }}
+          imagePullPolicy: {{ .Values.images.pullPolicy }}
           env:
             - name: PGPASSWORD
               valueFrom:
@@ -35,30 +42,10 @@ spec:
               if ! psql -h postgres -U kross -d kross -tAc "SELECT 1 FROM pg_database WHERE datname='${JFS_DB}'" | grep -q 1; then
                 psql -h postgres -U kross -d kross -c "CREATE DATABASE ${JFS_DB}"
               fi
-        - name: buckets
-          image: {{ .Values.rustfs.rcImage }}
-          env:
-            - name: RUSTFS_ACCESS_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: kross-secrets
-                  key: s3-access-key
-            - name: RUSTFS_SECRET_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: kross-secrets
-                  key: s3-secret-key
-          command:
-            - /bin/sh
-            - -c
-            - |
-              set -eu
-              until /usr/bin/rc alias set local http://rustfs:9000 "${RUSTFS_ACCESS_KEY}" "${RUSTFS_SECRET_KEY}"; do sleep 2; done
-              /usr/bin/rc ls local/kross >/dev/null 2>&1 || /usr/bin/rc mb local/kross
-              /usr/bin/rc ls local/{{ .Values.juicefs.bucket }} >/dev/null 2>&1 || /usr/bin/rc mb local/{{ .Values.juicefs.bucket }}
       containers:
         - name: format
           image: {{ .Values.juicefs.formatImage }}
+          imagePullPolicy: {{ .Values.images.pullPolicy }}
           env:
             - name: JUICEFS_ACCESS_KEY
               valueFrom:
@@ -71,7 +58,7 @@ spec:
                   name: kross-secrets
                   key: s3-secret-key
             - name: JUICEFS_BUCKET
-              value: {{ printf "http://rustfs:9000/%s" .Values.juicefs.bucket | quote }}
+              value: {{ printf "http://%s:9000/%s" (include "kross.rustfsFqdn" .) .Values.juicefs.bucket | quote }}
             - name: JUICEFS_VOLUME_NAME
               value: {{ .Values.juicefs.volumeName | quote }}
             - name: JUICEFS_META_URL
@@ -86,12 +73,23 @@ spec:
             - -c
             - |
               set -eu
-              if ! juicefs status "${JUICEFS_META_URL}" >/dev/null 2>&1; then
-                juicefs format \
-                  --storage s3 \
-                  --bucket "${JUICEFS_BUCKET}" \
-                  --access-key "${JUICEFS_ACCESS_KEY}" \
-                  --secret-key "${JUICEFS_SECRET_KEY}" \
-                  "${JUICEFS_META_URL}" \
-                  "${JUICEFS_VOLUME_NAME}"
-              fi
+              i=0
+              while [ "$i" -lt 60 ]; do
+                if juicefs status "${JUICEFS_META_URL}" >/dev/null 2>&1; then
+                  exit 0
+                fi
+                if juicefs format \
+                    --storage s3 \
+                    --bucket "${JUICEFS_BUCKET}" \
+                    --access-key "${JUICEFS_ACCESS_KEY}" \
+                    --secret-key "${JUICEFS_SECRET_KEY}" \
+                    "${JUICEFS_META_URL}" \
+                    "${JUICEFS_VOLUME_NAME}"; then
+                  exit 0
+                fi
+                i=$((i + 1))
+                sleep 5
+              done
+              echo "juicefs format did not succeed" >&2
+              exit 1
+{{- end }}

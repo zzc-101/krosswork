@@ -81,7 +81,7 @@ public record IntegrationPreset(
     if (!requiresHost()) {
       return Optional.ofNullable(mcpUrl).filter(value -> !value.isBlank());
     }
-    return normalizeHost(hostOf(config)).map(host -> mcpUrl.replace("{host}", host));
+    return hostOf(config).flatMap(IntegrationPreset::normalizeHost).map(host -> mcpUrl.replace("{host}", host));
   }
 
   static Optional<String> hostOf(JsonNode config) {

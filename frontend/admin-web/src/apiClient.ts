@@ -375,6 +375,8 @@ export class AdminApiClient {
       headers.set('x-app-organization-id', this.organizationId);
     if (options.body !== undefined && !(options.body instanceof FormData))
       headers.set('content-type', 'application/json');
+    const csrf = csrfHeader();
+    if (csrf) headers.set('X-XSRF-TOKEN', csrf);
     const response = await this.fetcher(new URL(path, this.options.baseUrl ?? location.origin), {
       method: options.method ?? 'GET',
       headers,
@@ -408,6 +410,15 @@ export class AdminApiClient {
     if (!parsed.success) throw new AdminApiError(502, 'INVALID_RESPONSE', '服务端返回的数据不符合管理端协议');
     return parsed.data;
   }
+}
+
+function csrfHeader(): string | undefined {
+  if (typeof document === 'undefined') {
+    return undefined;
+  }
+  const match = /(?:^|;\s*)XSRF-TOKEN=([^;]*)/.exec(document.cookie);
+  const token = match?.[1];
+  return token ? decodeURIComponent(token) : undefined;
 }
 
 export type { CreatedInvite, Invite, Session, UserAccount };

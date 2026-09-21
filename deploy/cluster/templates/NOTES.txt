@@ -1,14 +1,15 @@
-1. Install JuiceFS CSI Driver if it is not already present:
+1. Install JuiceFS CSI Driver if it is not already present. On k3s keep kubeletDir
+   at /var/lib/kubelet (do not set the rancher agent path):
 
    helm repo add juicefs https://juicedata.github.io/charts/
-   helm upgrade --install juicefs-csi-driver juicefs/juicefs-csi-driver -n kube-system
+   helm upgrade --install juicefs-csi-driver juicefs/juicefs-csi-driver -n kube-system \
+     --set kubeletDir=/var/lib/kubelet
 
 2. Make these images available on every k3s node (import, or set images.registry):
    {{ include "kross.image" (dict "root" . "image" .Values.images.server) }}, {{ include "kross.image" (dict "root" . "image" .Values.images.web) }}, {{ include "kross.image" (dict "root" . "image" .Values.images.worker) }}
 
-   k3s ctr images import kross-server.tar
-   k3s ctr images import kross-web.tar
-   k3s ctr images import kross-worker.tar
+   ./scripts/export-cluster-images.sh
+   gunzip -c kross-images.tar.gz | k3s ctr images import -
 
 3. Change default secrets in values before any real deployment.
 
@@ -17,3 +18,16 @@
 5. Browser uploads need a reachable S3 URL. Enable rustfs.ingress with its own host,
    or port-forward: kubectl -n {{ include "kross.namespace" . }} port-forward svc/rustfs 9000:9000
    Current APP_S3_PUBLIC_ENDPOINT={{ include "kross.s3PublicEndpoint" . }}
+
+6. kross-init is a regular Job (not a Helm hook). It creates the JuiceFS metadata
+   database and formats the volume. The control plane creates S3 buckets on startup.
+   Helm lookup omits the Job on upgrade; helm.sh/resource-policy=keep stops Helm
+   from deleting it when it drops out of the manifest.
+
+7. Worker Pods request app.agentCpuMillis / app.agentMemoryBytes (chart default
+   500m / 512Mi). On 2-core lab nodes keep this below leftover allocatable CPU
+   or the agent stays Pending with Insufficient cpu.
+
+8. JuiceFS CSI mounts from kube-system, so metaurl and the S3 bucket URL must
+   use postgres/rustfs cluster FQDNs, not the short names that only resolve in
+   the kross namespace.

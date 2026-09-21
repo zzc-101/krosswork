@@ -32,7 +32,8 @@ Kross 只有一套 SaaS Runtime 和固定工具策略，不存在运行模式或
 
 ## 身份与组织
 
-- 默认使用 HttpOnly `APP_SESSION` Cookie。
+- 默认使用 HttpOnly `APP_SESSION` Cookie，`SameSite=Lax`。HTTPS 部署设 `APP_SESSION_COOKIE_SECURE=true`。
+- 浏览器 POST/PATCH/DELETE 需带 `X-XSRF-TOKEN`（由 `XSRF-TOKEN` Cookie 提供）。自助注册默认打开。
 - 超级管理员可配置 OIDC Issuer、Client ID 和 Client Secret。
 - `APP_DEV_IDENTITY=1` 只允许本机冒烟，生产必须关闭。
 - 组织管理员管理本组织成员和已安装 Skill；平台模型由超级管理员维护。
